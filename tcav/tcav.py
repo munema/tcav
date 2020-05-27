@@ -144,6 +144,7 @@ class TCAV(object):
                alphas,
                random_counterpart=None,
                cav_dir=None,
+               tcav_dir=None,
                num_random_exp=5,
                random_concepts=None):
     """Initialze tcav class.
@@ -172,6 +173,7 @@ class TCAV(object):
     self.bottlenecks = bottlenecks
     self.activation_generator = activation_generator
     self.cav_dir = cav_dir
+    self.tcav_dir = tcav_dir
     self.alphas = alphas
     self.mymodel = activation_generator.get_model()
     self.model_to_run = self.mymodel.model_name
@@ -189,7 +191,7 @@ class TCAV(object):
                                      random_concepts=random_concepts)
     # parameters
     self.params = self.get_params()
-    tf.logging.info('TCAV will %s params' % len(self.params))
+    tf.logging.debug('TCAV will %s params' % len(self.params))
 
   def run(self, num_workers=10, run_parallel=False, overwrite=False, return_proto=False):
     """Run TCAV for all parameters (concept and random), write results to html.
@@ -207,7 +209,7 @@ class TCAV(object):
     """
     # for random exp,  a machine with cpu = 30, ram = 300G, disk = 10G and
     # pool worker 50 seems to work.
-    tf.logging.info('running %s params' % len(self.params))
+    tf.logging.debug('running %s params' % len(self.params))
     results = []
     now = time.time()
     if run_parallel:
@@ -275,7 +277,6 @@ class TCAV(object):
     target_class_for_compute_tcav_score = target_class
 
     cav_concept = concepts[0]
-
     i_up = self.compute_tcav_score(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
@@ -391,7 +392,7 @@ class TCAV(object):
     for bottleneck in self.bottlenecks:
       for target_in_test, concepts_in_test in self.pairs_to_test:
         for alpha in self.alphas:
-          tf.logging.info('%s %s %s %s', bottleneck, concepts_in_test,
+          tf.logging.debug('%s %s %s %s', bottleneck, concepts_in_test,
                           target_in_test, alpha)
           params.append(
               run_params.RunParams(bottleneck, concepts_in_test, target_in_test,

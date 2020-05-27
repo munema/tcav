@@ -295,6 +295,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
 
 
   # From Alex's code.
+  # (変更) op.nameの出力によっては変更する必要あり
   @staticmethod
   def get_bottleneck_tensors(scope):
     """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
@@ -304,6 +305,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
       if op.name.startswith(scope+'/') and 'Concat' in op.type:
         name = op.name.split('/')[1]
         bn_endpoints[name] = op.outputs[0]
+    print('You can choose {}'.format(list(bn_endpoints.keys())))
     return bn_endpoints
 
   # Load graph and import into graph used by our session

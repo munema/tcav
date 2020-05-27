@@ -78,7 +78,7 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
           with tf.io.gfile.GFile(acts_path, 'rb') as f:
             acts[concept][bottleneck_name] = np.load(
                 f, allow_pickle=True).squeeze()
-            tf.logging.info('Loaded {} shape {}'.format(
+            tf.logging.debug('Loaded {} shape {}'.format(
                 acts_path, acts[concept][bottleneck_name].shape))
         else:
           acts[concept][bottleneck_name] = self.get_activations_for_concept(

@@ -37,6 +37,7 @@ import os
 import argparse
 from tensorflow.io import gfile
 import imagenet_and_broden_fetcher as fetcher
+import tensorflow as tf
 
 def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, number_of_random_folders):
     # Run script to download data to source_dir
@@ -73,6 +74,7 @@ def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, n
 
 
 if __name__ == '__main__':
+    tf.get_logger().setLevel('INFO')
     parser = argparse.ArgumentParser(description='Create examples and concepts folders.')
     parser.add_argument('--source_dir', type=str,
                         help='Name for the directory where we will create the data.')

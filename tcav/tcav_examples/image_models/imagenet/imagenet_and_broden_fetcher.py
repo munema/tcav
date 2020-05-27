@@ -82,12 +82,23 @@ Filters away images that are corrupted or smaller than 10KB
   Raises:
     Exception: Propagated from PIL.image.verify()
 """
-def download_image(path, url):
+# (変更)取得データ数(examples_selected)計算, ファイル名の重複を削除
+def download_image(path, url, examples_selected):
   image_name = url.split("/")[-1]
   image_name = image_name.split("?")[0]
   image_prefix = image_name.split(".")[0]
-  saving_path = os.path.join(path, image_prefix + ".jpg")
-  urllib.request.urlretrieve(url, saving_path)
+  randint = random.randint(0, 10000)
+  saving_path = os.path.join(path, image_prefix +str(randint) + ".jpg")
+  # (追加)タイムアウト処理追加
+  # urllib.request.urlretrieve(url, saving_path)
+  try:
+    data = urllib.request.urlopen(url, timeout=5).read()
+    with open(saving_path, mode="wb") as f:
+        f.write(data)
+    examples_selected += 1
+  except:
+    pass
+  return examples_selected
 
   try:
     # Throw an exception if the image is unreadable or corrupted
@@ -158,23 +169,27 @@ def fetch_imagenet_class(path, class_name, number_of_images, imagenet_dataframe)
         "Please provide a dataframe containing the imagenet classes. Easiest way to do this is by calling make_imagenet_dataframe()"
     )
   # To speed up imagenet download, we timeout image downloads at 5 seconds.
-  socket.setdefaulttimeout(5)
+  # socket.setdefaulttimeout(3)
 
   tf.logging.info("Fetching imagenet data for " + class_name)
   concept_path = os.path.join(path, class_name)
-  tf.io.gfile.makedirs(concept_path)
-  tf.logging.info("Saving images at " + concept_path)
+  if os.path.exists(concept_path):
+    num_downloaded = len(os.listdir(concept_path))
+    print(concept_path)
+  else:
+    tf.io.gfile.makedirs(concept_path)
+    num_downloaded = 0
+  tf.logging.info("Saving images at {}, now length {}".format(concept_path,num_downloaded))
 
   # Check to see if this class name exists. Fetch all urls if so.
   all_images = fetch_all_urls_for_concept(imagenet_dataframe, class_name)
-
-  # Fetch number_of_images images or as many as you can.
-  num_downloaded = 0
   for image_url in all_images:
+    print(num_downloaded)
+    print(len(os.listdir(concept_path)))
     if "flickr" not in image_url:
       try:
-        download_image(concept_path, image_url)
-        num_downloaded += 1
+        num_downloaded = download_image(concept_path, image_url, num_downloaded)
+        # num_downloaded += 1
 
       except Exception as e:
         tf.logging.info("Problem downloading imagenet image. Exception was " +
@@ -275,10 +290,14 @@ def generate_random_folders(working_directory, random_folder_prefix,
   for partition_number in range(number_of_random_folders):
     partition_name = random_folder_prefix + "_" + str(partition_number)
     partition_folder_path = os.path.join(working_directory, partition_name)
-    tf.io.gfile.makedirs(partition_folder_path)
+    if os.path.exists(partition_folder_path):
+      examples_selected = len(os.listdir(partition_folder_path))
+    else:
+      tf.io.gfile.makedirs(partition_folder_path)
+      examples_selected = 0
 
     # Select a random concept
-    examples_selected = 0
+    tf.logging.info('number of examples {}'.format(examples_selected))
     while examples_selected < number_of_examples_per_folder:
       random_concept = random.choice(imagenet_concepts)
       urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
@@ -286,8 +305,8 @@ def generate_random_folders(working_directory, random_folder_prefix,
         # We are filtering out images from Flickr urls, since several of those were removed
         if "flickr" not in url:
           try:
-            download_image(partition_folder_path, url)
-            examples_selected += 1
+            examples_selected = download_image(partition_folder_path, url, examples_selected)
+            # examples_selected += 1
             if (examples_selected) % 10 == 0:
               tf.logging.info("Downloaded " + str(examples_selected) + "/" +
                               str(number_of_examples_per_folder) + " for " +

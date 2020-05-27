@@ -4,3 +4,11 @@
 .ipynb_checkpoints/
 build/
 
+.vscode/*
+
+config.py
+tensorflow/*
+tcav/dataset/*
+tcav/frozen_models/*
+log/*
+tensorflow
