@@ -38,23 +38,37 @@ import argparse
 from tensorflow.io import gfile
 import imagenet_and_broden_fetcher as fetcher
 import tensorflow as tf
+import logging
 
 def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, number_of_random_folders):
+    
+    logging.basicConfig(filename=source_dir+'/logger.log', level=logging.INFO)
+    
     # Run script to download data to source_dir
     if not gfile.exists(source_dir):
         gfile.makedirs(source_dir)
     if not gfile.exists(os.path.join(source_dir,'broden1_224/')) or not gfile.exists(os.path.join(source_dir,'inception5h')):
         subprocess.call(['bash' , 'FetchDataAndModels.sh', source_dir])
+        
+        
+    # make targets from imagenet
+    imagenet_dataframe = fetcher.make_imagenet_dataframe("./imagenet_url_map.csv")
+    all_class = imagenet_dataframe["class_name"].values.tolist()
 
     # Determine classes that we will fetch
     imagenet_classes = ['zebra']
     broden_concepts = ['striped', 'dotted', 'zigzagged']
+    random_except_concepts = ['zebra','fire engine']
+    except_words = ['cat', 'shark', 'apron', 'dogsled','dumbbell','ball','bus']
+    for e_word in except_words:
+        random_except_concepts.extend([element for element in all_class if e_word == str(element)[-len(e_word):]])
+    
+    tf.logging.info('imagenet_classe %s' % imagenet_classes)
+    tf.logging.info('concepts %s' % broden_concepts)
+    tf.logging.info('random_except_concepts %s' % random_except_concepts)
 
-    # make targets from imagenet
-    imagenet_dataframe = fetcher.make_imagenet_dataframe("./imagenet_url_map.csv")
     for image in imagenet_classes:
         fetcher.fetch_imagenet_class(source_dir, image, number_of_images_per_folder, imagenet_dataframe)
-
     # Make concepts from broden
     for concept in broden_concepts:
         fetcher.download_texture_to_working_folder(broden_path=os.path.join(source_dir, 'broden1_224'),
@@ -63,12 +77,14 @@ def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, n
                                                    number_of_images=number_of_images_per_folder)
 
     # Make random folders. If we want to run N random experiments with tcav, we need N+1 folders.
+    # (変更) 除外するクラスを指定
     fetcher.generate_random_folders(
         working_directory=source_dir,
         random_folder_prefix="random500",
         number_of_random_folders=number_of_random_folders+1,
         number_of_examples_per_folder=number_of_images_per_folder,
-        imagenet_dataframe=imagenet_dataframe
+        imagenet_dataframe=imagenet_dataframe,
+        random_except_concepts = random_except_concepts
     )
 
 

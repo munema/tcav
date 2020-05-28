@@ -27,6 +27,9 @@ import numpy as np
 import time
 import tensorflow as tf
 
+import logging
+import pathlib
+from tcav.utils import pickle_dump
 
 class TCAV(object):
   """TCAV object: runs TCAV for one target and a set of concepts.
@@ -180,6 +183,9 @@ class TCAV(object):
     self.sess = sess
     self.random_counterpart = random_counterpart
     self.relative_tcav = (random_concepts is not None) and (set(concepts) == set(random_concepts))
+    
+    #(追加)ログファイル作成
+    logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
     if num_random_exp < 2:
         tf.logging.error('the number of random concepts has to be at least 2')
@@ -193,6 +199,7 @@ class TCAV(object):
     self.params = self.get_params()
     tf.logging.debug('TCAV will %s params' % len(self.params))
 
+  # (変更) 保存
   def run(self, num_workers=10, run_parallel=False, overwrite=False, return_proto=False):
     """Run TCAV for all parameters (concept and random), write results to html.
 
@@ -229,8 +236,10 @@ class TCAV(object):
     if return_proto:
       return utils.results_to_proto(results)
     else:
+      pickle_dump(results, self.tcav_dir + 'Results')
       return results
-
+    
+  # (変更) 保存
   def _run_single_set(self, param, overwrite=False, run_parallel=False):
     """Run TCAV with provided for one set of (target, concepts).
 
@@ -315,6 +324,9 @@ class TCAV(object):
             bottleneck
     }
     del acts
+    
+    pickle_dump(result, self.tcav_dir + '{}_{}'.format(concepts[0],concepts[1]))
+    
     return result
 
   def _process_what_to_run_expand(self, num_random_exp=100, random_concepts=None):

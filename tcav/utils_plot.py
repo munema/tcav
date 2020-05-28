@@ -93,6 +93,7 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
         i_ups = [item['i_up'] for item in result_summary[concept][bottleneck]]
         
         # Calculate statistical significance
+        print(random_i_ups)
         _, p_val = ttest_ind(random_i_ups[bottleneck], i_ups)
                   
         if bottleneck not in plot_data:

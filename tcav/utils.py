@@ -18,6 +18,7 @@ from scipy.stats import ttest_ind
 import numpy as np
 import tensorflow as tf
 from tcav.tcav_results.results_pb2 import Result, Results
+import pickle
 
 _KEYS = [
     "cav_key", "cav_concept", "negative_concept", "target_class", "i_up",
@@ -269,3 +270,13 @@ def results_to_proto(results):
   for result in results:
     results_proto.results.append(result_to_proto(result))
   return results_proto
+
+
+def pickle_dump(obj, path):
+    with open(path, mode='wb') as f:
+        pickle.dump(obj,f)
+
+def pickle_load(path):
+    with open(path, mode='rb') as f:
+        data = pickle.load(f)
+        return data

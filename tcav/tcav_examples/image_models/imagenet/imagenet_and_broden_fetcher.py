@@ -48,10 +48,14 @@ from PIL import Image
 import tensorflow as tf
 import socket
 import random
+import string
 
 kImagenetBaseUrl = "http://imagenet.stanford.edu/api/text/imagenet.synset.geturls?wnid="
 kBrodenTexturesPath = "broden1_224/images/dtd/"
 kMinFileSize = 10000
+
+def randomname(n):
+   return ''.join(random.choices(string.ascii_letters + string.digits, k=n))
 
 ####### Helper functions
 """ Makes a dataframe matching imagenet labels with their respective url.
@@ -86,19 +90,20 @@ Filters away images that are corrupted or smaller than 10KB
 def download_image(path, url, examples_selected):
   image_name = url.split("/")[-1]
   image_name = image_name.split("?")[0]
-  image_prefix = image_name.split(".")[0]
-  randint = random.randint(0, 10000)
-  saving_path = os.path.join(path, image_prefix +str(randint) + ".jpg")
+  # image_prefix = image_name.split(".")[0]
+  # randint = random.randint(0, 1000000)
+  name = randomname(8)
+  # saving_path = os.path.join(path, image_prefix +str(randint) + ".jpg")
+  saving_path = os.path.join(path, name + ".jpg")
   # (追加)タイムアウト処理追加
-  # urllib.request.urlretrieve(url, saving_path)
-  try:
-    data = urllib.request.urlopen(url, timeout=5).read()
-    with open(saving_path, mode="wb") as f:
-        f.write(data)
-    examples_selected += 1
-  except:
-    pass
-  return examples_selected
+  urllib.request.urlretrieve(url, saving_path)
+  # try:
+  #   data = urllib.request.urlopen(url, timeout=5).read()
+  #   with open(saving_path, mode="wb") as f:
+  #       f.write(data)
+  #   examples_selected += 1
+  # except:
+  #   pass
 
   try:
     # Throw an exception if the image is unreadable or corrupted
@@ -107,12 +112,16 @@ def download_image(path, url, examples_selected):
     # Remove images smaller than 10kb, to make sure we are not downloading empty/low quality images
     if tf.io.gfile.stat(saving_path).length < kMinFileSize:
       tf.io.gfile.remove(saving_path)
+    # (変更)全て成功したときに+1
+    else:
+      examples_selected += 1
   # PIL.Image.verify() throws a default exception if it finds a corrupted image.
   except Exception as e:
     tf.io.gfile.remove(
         saving_path
     )  # We need to delete it, since urllib automatically saves them.
     raise e
+  return examples_selected
 
 
 """ For a imagenet label, fetches all URLs that contain this image, from the main URL contained in the dataframe
@@ -169,7 +178,7 @@ def fetch_imagenet_class(path, class_name, number_of_images, imagenet_dataframe)
         "Please provide a dataframe containing the imagenet classes. Easiest way to do this is by calling make_imagenet_dataframe()"
     )
   # To speed up imagenet download, we timeout image downloads at 5 seconds.
-  # socket.setdefaulttimeout(3)
+  socket.setdefaulttimeout(3)
 
   tf.logging.info("Fetching imagenet data for " + class_name)
   concept_path = os.path.join(path, class_name)
@@ -184,8 +193,6 @@ def fetch_imagenet_class(path, class_name, number_of_images, imagenet_dataframe)
   # Check to see if this class name exists. Fetch all urls if so.
   all_images = fetch_all_urls_for_concept(imagenet_dataframe, class_name)
   for image_url in all_images:
-    print(num_downloaded)
-    print(len(os.listdir(concept_path)))
     if "flickr" not in image_url:
       try:
         num_downloaded = download_image(concept_path, image_url, num_downloaded)
@@ -285,8 +292,10 @@ images on them, like this:
 """
 def generate_random_folders(working_directory, random_folder_prefix,
                             number_of_random_folders,
-                            number_of_examples_per_folder, imagenet_dataframe):
+                            number_of_examples_per_folder, imagenet_dataframe, random_except_concepts):
+  socket.setdefaulttimeout(3)
   imagenet_concepts = imagenet_dataframe["class_name"].values.tolist()
+  imagenet_concepts = [s for s in imagenet_concepts if s not in random_except_concepts]
   for partition_number in range(number_of_random_folders):
     partition_name = random_folder_prefix + "_" + str(partition_number)
     partition_folder_path = os.path.join(working_directory, partition_name)
@@ -297,7 +306,7 @@ def generate_random_folders(working_directory, random_folder_prefix,
       examples_selected = 0
 
     # Select a random concept
-    tf.logging.info('number of examples {}'.format(examples_selected))
+    tf.logging.info('{} number of examples {}'.format(partition_name,examples_selected))
     while examples_selected < number_of_examples_per_folder:
       random_concept = random.choice(imagenet_concepts)
       urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)

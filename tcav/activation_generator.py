@@ -145,7 +145,8 @@ class ImageActivationGenerator(ActivationGeneratorBase):
         return img
 
     except Exception as e:
-      tf.logging.info(e)
+      print(filename)
+      #tf.logging.info(e)
       return None
     return img
 

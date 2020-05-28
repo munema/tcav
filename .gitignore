@@ -12,3 +12,4 @@ tcav/dataset/*
 tcav/frozen_models/*
 log/*
 tensorflow
+trash
