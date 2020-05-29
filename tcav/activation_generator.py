@@ -84,7 +84,7 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
           acts[concept][bottleneck_name] = self.get_activations_for_concept(
               concept, bottleneck_name)
           if acts_path:
-            tf.logging.info('{} does not exist, Making one...'.format(
+            tf.logging.debug('{} does not exist, Making one...'.format(
                 acts_path))
             tf.io.gfile.mkdir(os.path.dirname(acts_path))
             with tf.io.gfile.GFile(acts_path, 'w') as f:
@@ -145,15 +145,14 @@ class ImageActivationGenerator(ActivationGeneratorBase):
         return img
 
     except Exception as e:
-      print(filename)
-      #tf.logging.info(e)
+      tf.logging.info(e)
       return None
     return img
 
   def load_images_from_files(self, filenames, max_imgs=500,
-                             do_shuffle=True, run_parallel=True,
+                             do_shuffle=True, run_parallel=False,
                              shape=(299, 299),
-                             num_workers=50):
+                             num_workers=4):
     """Return image arrays from filenames.
 
     Args:

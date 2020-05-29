@@ -161,7 +161,7 @@ class CAV(object):
       ValueError: if the model_type in hparam is not compatible.
     """
 
-    tf.logging.info('training with alpha={}'.format(self.hparams.alpha))
+    tf.logging.debug('training with alpha={}'.format(self.hparams.alpha))
     x, labels, labels2text = CAV._create_cav_training_set(
         self.concepts, self.bottleneck, acts)
 
@@ -267,7 +267,7 @@ class CAV(object):
       # overall correctness is weighted by the number of examples in this class.
       num_correct += (sum(idx) * acc[labels2text[class_id]])
     acc['overall'] = float(num_correct) / float(len(y_test))
-    tf.logging.info('acc per class %s' % (str(acc)))
+    tf.logging.debug('acc per class %s' % (str(acc)))
     return acc
 
 

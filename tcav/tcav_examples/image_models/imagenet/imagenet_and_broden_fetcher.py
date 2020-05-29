@@ -86,35 +86,25 @@ Filters away images that are corrupted or smaller than 10KB
   Raises:
     Exception: Propagated from PIL.image.verify()
 """
-# (変更)取得データ数(examples_selected)計算, ファイル名の重複を削除
+# (変更)取得データ数(examples_selected)計算, ファイル名の重複を無くすためにランダムな名前にする(まだ読み込みないファイルが存在する...)
 def download_image(path, url, examples_selected):
   image_name = url.split("/")[-1]
   image_name = image_name.split("?")[0]
   # image_prefix = image_name.split(".")[0]
-  # randint = random.randint(0, 1000000)
   name = randomname(8)
   # saving_path = os.path.join(path, image_prefix +str(randint) + ".jpg")
   saving_path = os.path.join(path, name + ".jpg")
-  # (追加)タイムアウト処理追加
   urllib.request.urlretrieve(url, saving_path)
-  # try:
-  #   data = urllib.request.urlopen(url, timeout=5).read()
-  #   with open(saving_path, mode="wb") as f:
-  #       f.write(data)
-  #   examples_selected += 1
-  # except:
-  #   pass
-
   try:
     # Throw an exception if the image is unreadable or corrupted
     Image.open(saving_path).verify()
-
     # Remove images smaller than 10kb, to make sure we are not downloading empty/low quality images
     if tf.io.gfile.stat(saving_path).length < kMinFileSize:
       tf.io.gfile.remove(saving_path)
     # (変更)全て成功したときに+1
     else:
       examples_selected += 1
+      print(examples_selected)
   # PIL.Image.verify() throws a default exception if it finds a corrupted image.
   except Exception as e:
     tf.io.gfile.remove(
@@ -178,7 +168,7 @@ def fetch_imagenet_class(path, class_name, number_of_images, imagenet_dataframe)
         "Please provide a dataframe containing the imagenet classes. Easiest way to do this is by calling make_imagenet_dataframe()"
     )
   # To speed up imagenet download, we timeout image downloads at 5 seconds.
-  socket.setdefaulttimeout(3)
+  socket.setdefaulttimeout(5)
 
   tf.logging.info("Fetching imagenet data for " + class_name)
   concept_path = os.path.join(path, class_name)

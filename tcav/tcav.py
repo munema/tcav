@@ -216,7 +216,8 @@ class TCAV(object):
     """
     # for random exp,  a machine with cpu = 30, ram = 300G, disk = 10G and
     # pool worker 50 seems to work.
-    tf.logging.debug('running %s params' % len(self.params))
+    tf.logging.info('running %s params' % len(self.params))
+    tf.logging.info('training with alpha={}'.format(self.alphas))
     results = []
     now = time.time()
     if run_parallel:
