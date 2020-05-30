@@ -56,7 +56,7 @@ def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, n
     all_class = imagenet_dataframe["class_name"].values.tolist()
 
     # Determine classes that we will fetch
-    imagenet_classes = ['zebra']
+    imagenet_classes = ['fire engine']
     broden_concepts = ['striped', 'dotted', 'zigzagged']
     random_except_concepts = ['zebra','fire engine']
     except_words = ['cat', 'shark', 'apron', 'dogsled','dumbbell','ball','bus']
@@ -88,6 +88,41 @@ def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, n
     )
 
 
+def make_randoms(source_dir, number_of_images_per_folder, number_of_random_folders):
+    
+    logging.basicConfig(filename=source_dir+'/logger.log', level=logging.INFO)
+    
+    # Run script to download data to source_dir
+    if not gfile.exists(source_dir):
+        gfile.makedirs(source_dir)
+    if not gfile.exists(os.path.join(source_dir,'broden1_224/')) or not gfile.exists(os.path.join(source_dir,'inception5h')):
+        subprocess.call(['bash' , 'FetchDataAndModels.sh', source_dir])
+        
+        
+    # make targets from imagenet
+    imagenet_dataframe = fetcher.make_imagenet_dataframe("./imagenet_url_map.csv")
+    all_class = imagenet_dataframe["class_name"].values.tolist()
+
+    # Determine classes that we will fetch
+    imagenet_classes = ['fire engine']
+    broden_concepts = ['striped', 'dotted', 'zigzagged']
+    random_except_concepts = ['zebra','fire engine']
+    except_words = ['cat', 'shark', 'apron', 'dogsled','dumbbell','ball','bus']
+    for e_word in except_words:
+        random_except_concepts.extend([element for element in all_class if e_word == str(element)[-len(e_word):]])
+
+
+    # Make random folders. If we want to run N random experiments with tcav, we need N+1 folders.
+    # (変更) 除外するクラスを指定
+    fetcher.generate_random_folders(
+        working_directory=source_dir,
+        random_folder_prefix="random500",
+        number_of_random_folders=number_of_random_folders+1,
+        number_of_examples_per_folder=number_of_images_per_folder,
+        imagenet_dataframe=imagenet_dataframe,
+        random_except_concepts = random_except_concepts
+    )
+
 
 if __name__ == '__main__':
     tf.get_logger().setLevel('INFO')
@@ -104,7 +139,10 @@ if __name__ == '__main__':
     if not gfile.exists(args.source_dir):
         gfile.makedirs(os.path.join(args.source_dir))
         print("Created source directory at " + args.source_dir)
-    # Make data
-    make_concepts_targets_and_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
-    print("Successfully created data at " + args.source_dir)
+    # # Make data
+    # make_concepts_targets_and_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
+    # print("Successfully created data at " + args.source_dir)
 
+    # Make random
+    make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
+    print("Successfully created data at " + args.source_dir)

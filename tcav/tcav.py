@@ -326,7 +326,7 @@ class TCAV(object):
     }
     del acts
     
-    pickle_dump(result, self.tcav_dir + '{}_{}'.format(concepts[0],concepts[1]))
+    pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
     
     return result
 
