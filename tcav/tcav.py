@@ -59,7 +59,7 @@ class TCAV(object):
     # Grad points in the direction which DECREASES probability of class
     grad = np.reshape(mymodel.get_gradient(
         act, [class_id], cav.bottleneck, example), -1)
-    dot_prod = np.dot(grad, cav.get_direction(concept))
+    dot_prod = np.dot(grad, cav.get_direction(concept))    
     return dot_prod < 0
 
   @staticmethod
@@ -108,6 +108,7 @@ class TCAV(object):
           count += 1
       return float(count) / float(len(class_acts))
 
+  # (変更) - lossの勾配 から logitの勾配に変更
   @staticmethod
   def get_directional_dir(
       mymodel, target_class, concept, cav, class_acts, examples):
@@ -128,14 +129,19 @@ class TCAV(object):
     Returns:
       list of values of directional derivatives.
     """
+    
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
     for i in range(len(class_acts)):
       act = np.expand_dims(class_acts[i], 0)
       example = examples[i]
+            
+      # grad = np.reshape(
+      #     mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
       grad = np.reshape(
-          mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+          mymodel.get_logit_gradient(act, cav.bottleneck), -1)      
       directional_dir_vals.append(np.dot(grad, cav.get_direction(concept)))
+      
     return directional_dir_vals
 
   def __init__(self,
@@ -149,7 +155,8 @@ class TCAV(object):
                cav_dir=None,
                tcav_dir=None,
                num_random_exp=5,
-               random_concepts=None):
+               random_concepts=None,
+               project_name=None):
     """Initialze tcav class.
 
     Args:
@@ -183,7 +190,7 @@ class TCAV(object):
     self.sess = sess
     self.random_counterpart = random_counterpart
     self.relative_tcav = (random_concepts is not None) and (set(concepts) == set(random_concepts))
-    
+    self.project_name = project_name
     #(追加)ログファイル作成
     logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
@@ -231,13 +238,16 @@ class TCAV(object):
     else:
       for i, param in enumerate(self.params):
         tf.logging.info('Running param %s of %s' % (i, len(self.params)))
+        # 一時的にrandomをスキップ
+        if 'random500' in param.concepts[0] and self.cav_dir is None:
+          continue
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
         self.params), time.time() - now))
     if return_proto:
       return utils.results_to_proto(results)
     else:
-      pickle_dump(results, self.tcav_dir + 'Results')
+      pickle_dump(results, self.tcav_dir + self.project_name)
       return results
     
   # (変更) 保存
@@ -326,7 +336,8 @@ class TCAV(object):
     }
     del acts
     
-    pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
+    if not self.cav_dir is None:
+      pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
     
     return result
 

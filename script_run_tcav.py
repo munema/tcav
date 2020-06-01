@@ -6,7 +6,7 @@ import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
 import os 
 import tensorflow as tf
-from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers
+from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on
 
 # function to create project name
 
@@ -27,20 +27,24 @@ def create_project_name(model, bottlenecks, target, concepts, version):
 print ('REMEMBER TO UPDATE YOUR_PATH (where images, models are)!')
 # the name of the parent directory that results are stored (only if you want to cache)
 project_name = create_project_name(model_to_run, bottlenecks, target, concepts, version)
-working_dir = root_dir + 'log/'  + project_name
+save_folder = model_to_run
+working_dir = root_dir + 'log/'  + save_folder
 # where activations are stored (only if your act_gen_wrapper does so)
 activation_dir =  working_dir+ '/activations/'
 # where CAVs are stored. 
 # You can say None if you don't wish to store any.
-cav_dir = working_dir + '/cavs/'
-# where CAVs are stored. 
+if is_cav_on:
+    cav_dir = working_dir + '/cavs/'
+    utils.make_dir_if_not_exists(cav_dir)
+else:
+    cav_dir = None
+# where TCAVs are stored. 
 tcav_dir = working_dir + '/tcavs/'
 # where the images live. 
 source_dir = root_dir + 'tcav/dataset/for_tcav/'
       
 utils.make_dir_if_not_exists(activation_dir)
 utils.make_dir_if_not_exists(working_dir)
-utils.make_dir_if_not_exists(cav_dir)
 utils.make_dir_if_not_exists(tcav_dir)
 
 # this is a regularizer penalty parameter for linear classifier to get CAVs. 
@@ -52,7 +56,8 @@ print('Results is saved at {}'.format(working_dir))
 sess = utils.create_session()
 
 # GRAPH_PATH is where the trained model is stored.
-GRAPH_PATH = source_dir + "/inception5h/tensorflow_inception_graph.pb"
+# GRAPH_PATH = source_dir + "/inception5h/tensorflow_inception_graph.pb"
+GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn.pb'
 # LABEL_PATH is where the labels are stored. Each line contains one class, and they are ordered with respect to their index in 
 # the logit layer. (yes, id_to_label function in the model wrapper reads from this file.)
 # For example, imagenet_comp_graph_label_strings.txt looks like:
@@ -61,9 +66,13 @@ GRAPH_PATH = source_dir + "/inception5h/tensorflow_inception_graph.pb"
 # English setter
 # Siberian husky ...
 
-LABEL_PATH = source_dir + "/inception5h/imagenet_comp_graph_label_strings.txt"
+# LABEL_PATH = source_dir + "/inception5h/imagenet_comp_graph_label_strings.txt"
+LABEL_PATH = root_dir + 'tcav/dataset/fruit25_label_string.txt'
 
-mymodel = model.GoogleNetWrapper_public(sess,
+# mymodel = model.GoogleNetWrapper_public(sess,
+#                                         GRAPH_PATH,
+#                                         LABEL_PATH)
+mymodel = model.KerasCNNWrapper_public(sess,
                                         GRAPH_PATH,
                                         LABEL_PATH)
 
@@ -79,7 +88,8 @@ mytcav = tcav.TCAV(sess,
                    alphas,
                    cav_dir=cav_dir,
                    tcav_dir=tcav_dir,
-                   num_random_exp=num_random_exp)#10)
+                   num_random_exp=num_random_exp,
+                   project_name=project_name)#10)
 print ('This may take a while... Go get coffee!')
 results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
 print ('done!')

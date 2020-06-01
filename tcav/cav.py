@@ -229,7 +229,7 @@ class CAV(object):
       with tf.io.gfile.GFile(self.save_path, 'w') as pkl_file:
         pickle.dump(save_dict, pkl_file)
     else:
-      tf.logging.info('save_path is None. Not saving anything')
+      tf.logging.debug('save_path is None. Not saving anything')
 
   def _train_lm(self, lm, x, y, labels2text):
     """Train a model to get CAVs.

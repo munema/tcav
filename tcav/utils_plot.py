@@ -88,7 +88,9 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
       if not is_random_concept(concept):
         count_concepts += 1
     min_p_val /= count_concepts
-      
+    
+  num_concepts = 0
+  
   # print concepts and classes with indentation
   for concept in result_summary:
         
@@ -96,6 +98,7 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
     if not is_random_concept(concept):
       # print(" ", "Concept =", concept)
       plot_concepts.append(concept)
+      num_concepts += 1
 
       for bottleneck in result_summary[concept]:
         i_ups = [item['i_up'] for item in result_summary[concept][bottleneck]]
@@ -129,13 +132,13 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
         #     "not significant" if p_val > min_p_val else "significant"))
         
   # subtract number of random experiments
-  if random_counterpart:
-    num_concepts = len(result_summary) - 1
-  elif random_concepts:
-    num_concepts = len(result_summary) - len(random_concepts)
-  else: 
-    num_concepts = len(result_summary) - num_random_exp
-    
+  # if random_counterpart:
+  #   num_concepts = len(result_summary) - 1
+  # elif random_concepts:
+  #   num_concepts = len(result_summary) - len(random_concepts)
+  # else: 
+  #   num_concepts = len(result_summary) - num_random_exp
+  
   # randomプロット
   if plot_random:
     for bottleneck in random_i_ups:
@@ -144,7 +147,6 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
         plot_data[bottleneck]['significant'].append(True)    
     num_concepts += 1
     plot_concepts += ['random']
-
   num_bottlenecks = len(plot_data)
   bar_width = 0.35
     
@@ -160,7 +162,6 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   for i, [bn, vals] in enumerate(plot_data.items()):
     bar = ax.bar(index + i * bar_width, vals['bn_vals'],
         bar_width, yerr=vals['bn_stds'], label=bn)
-    
     # draw stars to mark bars that are stastically insignificant to 
     # show them as different from others
     # for j, significant in enumerate(vals['significant']):

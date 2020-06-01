@@ -140,6 +140,15 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
       self.bottlenecks_gradients[bn] = tf.gradients(
           self.loss, self.bottlenecks_tensors[bn])[0]
 
+  # (変更)logitの勾配作成
+  def _make_logit_gradient_tensors(self):
+    """Makes gradient tensors for all bottleneck tensors.
+    """
+    self.bottlenecks_logit_gradients = {}
+    for bn in self.bottlenecks_tensors:
+      self.bottlenecks_logit_gradients[bn] = tf.gradients(
+          self.ends['logit'], self.bottlenecks_tensors[bn])[0]      
+
   def get_gradient(self, acts, y, bottleneck_name, example):
     """Return the gradient of the loss with respect to the bottleneck_name.
 
@@ -156,6 +165,16 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     return self.sess.run(self.bottlenecks_gradients[bottleneck_name], {
         self.bottlenecks_tensors[bottleneck_name]: acts,
         self.y_input: y
+    })
+
+  # (変更) logit取得
+  def get_logit(self, examples):
+    return self.sess.run(self.ends['logit'], {self.ends['input']: examples})    
+    
+  # (変更) logitの勾配を得る  
+  def get_logit_gradient(self, acts, bottleneck_name):
+    return self.sess.run(self.bottlenecks_logit_gradients[bottleneck_name], {
+        self.bottlenecks_tensors[bottleneck_name]: acts,
     })
 
   def get_predictions(self, examples):
@@ -247,15 +266,21 @@ class PublicImageModelWrapper(ImageModelWrapper):
                labels_path,
                image_shape,
                endpoints_dict,
-               scope):
+               scope,
+               is_keras = False):
     super(PublicImageModelWrapper, self).__init__(image_shape)
     self.labels = tf.io.gfile.GFile(labels_path).read().splitlines()
     self.ends = PublicImageModelWrapper.import_graph(model_fn_path,
                                                      endpoints_dict,
                                                      self.image_value_range,
                                                      scope=scope)
-    self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors(
+
+    if not is_keras:
+      self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors(
         scope)
+    else:
+      self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors_ver_keras(
+        scope)      
     graph = tf.get_default_graph()
 
     # Construct gradient ops.
@@ -270,6 +295,8 @@ class PublicImageModelWrapper(ImageModelWrapper):
                   self.ends['prediction'].get_shape().as_list()[1]),
               logits=self.pred))
     self._make_gradient_tensors()
+    # (変更) logitの勾配を作成
+    self._make_logit_gradient_tensors()
 
   def id_to_label(self, idx):
     return self.labels[idx]
@@ -305,6 +332,21 @@ class PublicImageModelWrapper(ImageModelWrapper):
       if op.name.startswith(scope+'/') and 'Concat' in op.type:
         name = op.name.split('/')[1]
         bn_endpoints[name] = op.outputs[0]
+    print('You can choose {}'.format(list(bn_endpoints.keys())))
+    return bn_endpoints
+  
+  # (変更) keras用
+  @staticmethod
+  def get_bottleneck_tensors_ver_keras(scope):
+    """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
+    graph = tf.get_default_graph()
+    bn_endpoints = {}
+    for op in graph.get_operations():
+      if op.name.startswith(scope+'/') and 'Conv2D' in op.type:
+        name = op.name.split('/')[1]
+        bn_endpoints[name] = op.outputs[0]
+    print(bn_endpoints)
+    あ
     print('You can choose {}'.format(list(bn_endpoints.keys())))
     return bn_endpoints
 
@@ -416,3 +458,28 @@ class MobilenetV2Wrapper_public(PublicImageModelWrapper):
                 name = op.name.split("/")[-2]
                 bn_endpoints[name] = op.outputs[0]
         return bn_endpoints
+
+class KerasCNNWrapper_public(PublicImageModelWrapper):
+    def __init__(self, sess, model_saved_path, labels_path):
+        self.image_value_range = (0, 1)
+        image_shape_v3 = [100, 100, 3]
+        endpoints_v3 = dict(
+            input='conv2d_input:0',
+            logit='dense_2/Softmax:0',
+            prediction='dense_2/Softmax:0',
+            pre_avgpool='max_pooling2d_2/MaxPool:0',
+            logit_weight='dense_2/Softmax:0',
+            logit_bias='dense_2/bias:0',
+        )
+
+        self.sess = sess
+        is_keras = True
+        super(KerasCNNWrapper_public, self).__init__(sess,
+                                                       model_saved_path,
+                                                       labels_path,
+                                                       image_shape_v3,
+                                                       endpoints_v3,
+                                                       scope='import',
+                                                       is_keras = is_keras
+                                                       )
+        self.model_name = 'KerasCNNWrapper_public'

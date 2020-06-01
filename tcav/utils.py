@@ -19,6 +19,7 @@ import numpy as np
 import tensorflow as tf
 from tcav.tcav_results.results_pb2 import Result, Results
 import pickle
+import pathlib
 
 _KEYS = [
     "cav_key", "cav_concept", "negative_concept", "target_class", "i_up",
@@ -280,3 +281,25 @@ def pickle_load(path):
     with open(path, mode='rb') as f:
         data = pickle.load(f)
         return data
+      
+      
+# .pbファイルをロードしてテキストファイルにネットワークの名前を書き込む
+def writeTensorsName(pb_file, txt_file):
+    # read pb into graph_def
+    with tf.gfile.GFile(pb_file, "rb") as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+
+    # import graph_def
+    with tf.Graph().as_default() as graph:
+        tf.import_graph_def(graph_def)
+
+    # print operations
+    path = pathlib.Path(txt_file)
+    with path.open(mode='w') as f:
+        # for op in graph.get_operations():
+        #     f.write(op.name+'\n')
+
+       for op in graph.get_operations():
+           for t in op.values():
+                f.write(t.name+'\n')
