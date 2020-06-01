@@ -102,6 +102,8 @@ class TCAV(object):
     else:
       for i in range(len(class_acts)):
         act = np.expand_dims(class_acts[i], 0)
+        if len(act.shape) == 3:
+          act = np.expand_dims(act,3)
         example = examples[i]
         if TCAV.get_direction_dir_sign(
             mymodel, act, cav, concept, class_id, example):
@@ -112,28 +114,12 @@ class TCAV(object):
   @staticmethod
   def get_directional_dir(
       mymodel, target_class, concept, cav, class_acts, examples):
-    """Return the list of values of directional derivatives.
-
-       (Only called when the values are needed as a referece)
-
-    Args:
-      mymodel: a model class instance
-      target_class: one target class
-      concept: one concept
-      cav: an instance of cav
-      class_acts: activations of the examples in the target class where
-        examples[i] corresponds to class_acts[i]
-      examples: an array of examples of the target class where examples[i]
-        corresponds to class_acts[i]
-
-    Returns:
-      list of values of directional derivatives.
-    """
-    
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
     for i in range(len(class_acts)):
       act = np.expand_dims(class_acts[i], 0)
+      if len(act.shape) == 3:
+        act = np.expand_dims(act,3)
       example = examples[i]
             
       # grad = np.reshape(
@@ -192,7 +178,7 @@ class TCAV(object):
     self.relative_tcav = (random_concepts is not None) and (set(concepts) == set(random_concepts))
     self.project_name = project_name
     #(追加)ログファイル作成
-    logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
+    # logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
     if num_random_exp < 2:
         tf.logging.error('the number of random concepts has to be at least 2')

@@ -57,7 +57,7 @@ sess = utils.create_session()
 
 # GRAPH_PATH is where the trained model is stored.
 # GRAPH_PATH = source_dir + "/inception5h/tensorflow_inception_graph.pb"
-GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn.pb'
+GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn_2d.pb'
 # LABEL_PATH is where the labels are stored. Each line contains one class, and they are ordered with respect to their index in 
 # the logit layer. (yes, id_to_label function in the model wrapper reads from this file.)
 # For example, imagenet_comp_graph_label_strings.txt looks like:

@@ -298,3 +298,171 @@ def get_dist(results):
     
   return dist
  
+ 
+def plot_concept_results(results, num_random_exp=100):
+  # helper function, returns if this is a random concept
+  def is_random_concept(concept):
+    return 'random500_' in concept
+
+  # print class, it will be the same for all
+  # print("Class =", results[0]['target_class'])
+
+  # prepare data
+  # dict with keys of concepts containing dict with bottlenecks
+  result_summary = {}
+    
+  for result in results:
+    if result['cav_concept'] not in result_summary:
+      result_summary[result['cav_concept']] = {}
+    
+    if result['bottleneck'] not in result_summary[result['cav_concept']]:
+      result_summary[result['cav_concept']][result['bottleneck']] = []
+    
+    result_summary[result['cav_concept']][result['bottleneck']].append(result)
+
+  # to plot, must massage data again 
+  plot_data = {}
+  plot_concepts = []
+  
+  num_concepts = 0
+  
+  
+  # print concepts and classes with indentation
+  for concept in result_summary:
+        
+    # if not random
+    if not is_random_concept(concept):
+      # print(" ", "Concept =", concept)
+      plot_concepts.append(concept)
+      num_concepts += 1
+
+      for bottleneck in result_summary[concept]:
+        i_ups = [item['i_up'] for item in result_summary[concept][bottleneck]]
+                  
+        if bottleneck not in plot_data:
+          plot_data[bottleneck] = {'bn_vals': [], 'bn_stds': [], 'significant': []}
+          
+        plot_data[bottleneck]['bn_vals'].append(np.mean(i_ups))
+        plot_data[bottleneck]['bn_stds'].append(np.std(i_ups))
+
+  num_bottlenecks = len(plot_data)
+  bar_width = 0.35
+    
+  # create location for each bar. scale by an appropriate factor to ensure 
+  # the final plot doesn't have any parts overlapping
+  index = np.arange(num_concepts) * bar_width * (num_bottlenecks + 1)
+  
+  
+  
+  
+  # matplotlib
+  fig, ax = plt.subplots()
+    
+  # draw all bottlenecks individually
+  for i, [bn, vals] in enumerate(plot_data.items()):
+    bar = ax.bar(index + i * bar_width, vals['bn_vals'],
+        bar_width, yerr=vals['bn_stds'], label=bn)
+    
+  # print (plot_data)
+  # set properties
+  # (変更) 0.5に横線を引く
+  ax.axhline(0.5, ls = "--", color = 'lightgray')
+  # (変更) ターゲットクラス名表示
+  target_class = results[0]['target_class'].title()
+  ax.set_title('{} TCAV Scores'.format(target_class))
+  ax.set_ylabel('TCAV Score')
+  ax.set_ylim(0, 1)
+  ax.set_xticks(index + num_bottlenecks * bar_width / 2)
+  ax.set_xticklabels(plot_concepts)
+  ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
+  fig.tight_layout()
+  plt.show()
+  
+  
+
+# sensitivityを得る
+def get_sensitivity(results):
+  # helper function, returns if this is a random concept
+  def is_random_concept(concept):
+    return 'random500_' in concept
+
+  # print class, it will be the same for all
+  # print("Class =", results[0]['target_class'])
+
+  # prepare data
+  # dict with keys of concepts containing dict with bottlenecks
+  result_summary = {}
+    
+  # random
+  random_i_ups = {}
+
+    
+  for result in results:
+    if result['cav_concept'] not in result_summary:
+      result_summary[result['cav_concept']] = {}
+    
+    if result['bottleneck'] not in result_summary[result['cav_concept']]:
+      result_summary[result['cav_concept']][result['bottleneck']] = []
+    
+    result_summary[result['cav_concept']][result['bottleneck']].append(result)
+
+    # store random
+    if is_random_concept(result['cav_concept']):
+      if result['bottleneck'] not in random_i_ups:
+        random_i_ups[result['bottleneck']] = []
+        
+      random_i_ups[result['bottleneck']].append(result['val_directional_dirs_mean'])
+    
+  dist = {}
+  
+  # to plot, must massage data again 
+  plot_data = {}
+  plot_concepts = []
+
+  # print concepts and classes with indentation
+  num_concepts = 0
+  for concept in result_summary:
+    # if not random
+    if not is_random_concept(concept):
+      if concept not in dist:
+        dist[concept] = {}
+      plot_concepts.append(concept)      
+      num_concepts += 1
+      for bottleneck in result_summary[concept]:
+        if bottleneck not in dist[concept]:
+          dist[concept][bottleneck] = {}
+        i_ups = [item['val_directional_dirs_mean'] for item in result_summary[concept][bottleneck]]
+        dist[concept][bottleneck] = i_ups
+
+        if bottleneck not in plot_data:
+          plot_data[bottleneck] = {'bn_vals': [], 'bn_stds': [], 'significant': []}
+
+        plot_data[bottleneck]['bn_vals'].append(np.mean(i_ups))
+        plot_data[bottleneck]['bn_stds'].append(np.std(i_ups))
+        
+  plot_concepts += ['random']
+  num_bottlenecks = len(plot_data)
+
+  bar_width = 0.35
+  index = np.arange(num_concepts) * bar_width * (num_bottlenecks + 1)
+  fig, ax = plt.subplots()
+  for i, [bn, vals] in enumerate(plot_data.items()):
+    bar = ax.bar(index + i * bar_width, vals['bn_vals'],
+        bar_width, yerr=vals['bn_stds'], label=bn)
+
+  # (変更) ターゲットクラス名表示
+  target_class = results[0]['target_class'].title()
+  ax.set_title('{} Sensitivity'.format(target_class))
+  ax.set_ylabel('Sensitivity')
+  ax.set_xticks(index + num_bottlenecks * bar_width / 2)
+  ax.set_xticklabels(plot_concepts)
+  ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
+  fig.tight_layout()
+  plt.show()
+
+  # add random dist
+  dist['random'] = {}
+  for bottleneck in random_i_ups:
+    dist['random'][bottleneck] = random_i_ups[bottleneck]
+    
+  # return dist

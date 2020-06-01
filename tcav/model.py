@@ -345,8 +345,6 @@ class PublicImageModelWrapper(ImageModelWrapper):
       if op.name.startswith(scope+'/') and 'Conv2D' in op.type:
         name = op.name.split('/')[1]
         bn_endpoints[name] = op.outputs[0]
-    print(bn_endpoints)
-    あ
     print('You can choose {}'.format(list(bn_endpoints.keys())))
     return bn_endpoints
 
@@ -467,7 +465,6 @@ class KerasCNNWrapper_public(PublicImageModelWrapper):
             input='conv2d_input:0',
             logit='dense_2/Softmax:0',
             prediction='dense_2/Softmax:0',
-            pre_avgpool='max_pooling2d_2/MaxPool:0',
             logit_weight='dense_2/Softmax:0',
             logit_bias='dense_2/bias:0',
         )
