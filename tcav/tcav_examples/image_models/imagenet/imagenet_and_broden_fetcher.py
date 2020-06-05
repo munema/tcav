@@ -114,6 +114,31 @@ def download_image(path, url, examples_selected):
   return examples_selected
 
 
+# (追加) color image取得 ※保留
+def download_color_image(others_partition_folder_path, pre_partition_name, color_params, url, examples_selected):
+  image_name = url.split("/")[-1]
+  image_name = image_name.split("?")[0]
+  name = randomname(8)
+  saving_path = os.path.join(others_partition_folder_path, name + ".jpg")
+  urllib.request.urlretrieve(url, saving_path)
+  try:
+    Image.open(saving_path).verify()
+
+    if tf.io.gfile.stat(saving_path).length < kMinFileSize:
+      tf.io.gfile.remove(saving_path)
+    # (変更)全て成功したときに+1
+    else:
+      examples_selected += 1
+      print(examples_selected)
+  # PIL.Image.verify() throws a default exception if it finds a corrupted image.
+  except Exception as e:
+    tf.io.gfile.remove(
+        saving_path
+    )  # We need to delete it, since urllib automatically saves them.
+    raise e
+  return img_color, examples_selected
+
+         
 """ For a imagenet label, fetches all URLs that contain this image, from the main URL contained in the dataframe
 
   Args:
@@ -282,10 +307,9 @@ images on them, like this:
 """
 def generate_random_folders(working_directory, random_folder_prefix,
                             number_of_random_folders,
-                            number_of_examples_per_folder, imagenet_dataframe, random_except_concepts):
+                            number_of_examples_per_folder, imagenet_dataframe):
   socket.setdefaulttimeout(3)
   imagenet_concepts = imagenet_dataframe["class_name"].values.tolist()
-  imagenet_concepts = [s for s in imagenet_concepts if s not in random_except_concepts]
   for partition_number in range(number_of_random_folders):
     partition_name = random_folder_prefix + "_" + str(partition_number)
     partition_folder_path = os.path.join(working_directory, partition_name)
@@ -313,4 +337,47 @@ def generate_random_folders(working_directory, random_folder_prefix,
             break  # Break if we successfully downloaded an image
           except:
               pass # try new url
-          
+
+# (追加) imagenetから色ベースで画像を収集 (hsv変換)
+def fetch_imagenet_class(path, number_of_images, imagenet_dataframe, folder_prefix):
+  if imagenet_dataframe is None:
+    raise tf.errors.NotFoundError(
+        None, None,
+        "Please provide a dataframe containing the imagenet classes. Easiest way to do this is by calling make_imagenet_dataframe()"
+    )
+  # To speed up imagenet download, we timeout image downloads at 5 seconds.
+  socket.setdefaulttimeout(3)
+  imagenet_concepts = imagenet_dataframe["class_name"].values.tolist()
+  
+  color_params = {'red':[[0,10],[340,360]],'violet':[260,275],'blue':[230,260],'cyan':[175,190],'green':[100,140],'yellow':[55,65],'orange':[30,40]}
+  
+  examples_selected = {}
+  for partition in color_params.keys():
+    partition_name = folder_prefix + "_" + partition
+    partition_folder_path = os.path.join(working_directory, partition_name)
+    if os.path.exists(partition_folder_path):
+      examples_selected[partition] = len(os.listdir(partition_folder_path))
+    else:
+      tf.io.gfile.makedirs(partition_folder_path)
+      examples_selected[partition] = 0
+  
+  pre_partition_name = str(os.path.join(working_directory, folder_prefix + "_"))
+      
+  # その他の色を格納
+  others_partition_name = folder_prefix + "_others"
+  others_partition_folder_path = os.path.join(working_directory, others_partition_name)
+  if not os.path.exists(others_partition_folder_path):
+    tf.io.gfile.makedirs(others_partition_folder_path)
+    
+  while np.min(examples_selected.values) < number_of_examples_per_folder:
+    random_concept = random.choice(imagenet_concepts)
+    urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
+    for url in urls:
+      # We are filtering out images from Flickr urls, since several of those were removed
+      if "flickr" not in url:
+        try:
+          img_color, examples_selected = download_color_image(others_partition_folder_path, partition_folder_path, color_params, url, examples_selected)
+          tf.logging.info("Downloaded " + img_color + 'img ' + examples_selected[img_color])
+          break  # Break if we successfully downloaded an image
+        except:
+            pass # try new url

@@ -109,8 +109,8 @@ def make_randoms(source_dir, number_of_images_per_folder, number_of_random_folde
         gfile.makedirs(source_dir)
     if not gfile.exists(os.path.join(source_dir,'broden1_224/')) or not gfile.exists(os.path.join(source_dir,'inception5h')):
         subprocess.call(['bash' , 'FetchDataAndModels.sh', source_dir])
-        
-        
+
+
     # make targets from imagenet
     imagenet_dataframe = fetcher.make_imagenet_dataframe("/home/tomohiro/code/tcav/tcav/tcav_examples/image_models/imagenet/imagenet_url_map.csv")
     all_class = imagenet_dataframe["class_name"].values.tolist()
@@ -118,10 +118,6 @@ def make_randoms(source_dir, number_of_images_per_folder, number_of_random_folde
     # Determine classes that we will fetch
     imagenet_classes = ['sorrel']
     broden_concepts = ['striped', 'dotted', 'zigzagged']
-    random_except_concepts = ['zebra','fire engine']
-    except_words = ['cat', 'shark', 'apron', 'dogsled','dumbbell','ball','bus']
-    for e_word in except_words:
-        random_except_concepts.extend([element for element in all_class if e_word == str(element)[-len(e_word):]])
 
 
     # Make random folders. If we want to run N random experiments with tcav, we need N+1 folders.
@@ -131,8 +127,7 @@ def make_randoms(source_dir, number_of_images_per_folder, number_of_random_folde
         random_folder_prefix="random500",
         number_of_random_folders=number_of_random_folders+1,
         number_of_examples_per_folder=number_of_images_per_folder,
-        imagenet_dataframe=imagenet_dataframe,
-        random_except_concepts = random_except_concepts
+        imagenet_dataframe=imagenet_dataframe
     )
 
 
@@ -156,9 +151,9 @@ if __name__ == '__main__':
     # print("Successfully created data at " + args.source_dir)
 
     # Make random
-    # make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
-    # print("Successfully created data at " + args.source_dir)
+    make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
+    print("Successfully created data at " + args.source_dir)
 
     # # Make target data
-    make_targets(args.source_dir, args.number_of_images_per_folder)
-    print("Successfully created data at " + args.source_dir)
+    # make_targets(args.source_dir, args.number_of_images_per_folder)
+    # print("Successfully created data at " + args.source_dir)
