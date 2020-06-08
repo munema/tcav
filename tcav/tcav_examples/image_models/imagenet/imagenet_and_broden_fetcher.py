@@ -462,7 +462,10 @@ def generate_random_folders(working_directory, random_folder_prefix,
     tf.logging.info('{} number of examples {}'.format(partition_name,examples_selected))
     while examples_selected < number_of_examples_per_folder:
       random_concept = random.choice(imagenet_concepts)
-      urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
+      try:
+        urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
+      except:
+        continue
       for url in urls:
         # We are filtering out images from Flickr urls, since several of those were removed
         if "flickr" not in url:

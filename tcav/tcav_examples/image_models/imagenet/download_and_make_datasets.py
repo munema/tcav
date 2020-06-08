@@ -88,22 +88,22 @@ def make_concepts_targets_and_randoms(source_dir, number_of_images_per_folder, n
     )
 
 def make_targets(source_dir, number_of_images_per_folder):
-    
+
     # make targets from imagenet
     imagenet_dataframe = fetcher.make_imagenet_dataframe("/home/tomohiro/code/tcav/tcav/tcav_examples/image_models/imagenet/imagenet_url_map.csv")
     all_class = imagenet_dataframe["class_name"].values.tolist()
 
     # Determine classes that we will fetch
     imagenet_classes = ['soccer ball']
-    
+
     for image in imagenet_classes:
         fetcher.fetch_imagenet_class(source_dir, image, number_of_images_per_folder, imagenet_dataframe)
 
 
 def make_randoms(source_dir, number_of_images_per_folder, number_of_random_folders):
-    
+
     logging.basicConfig(filename=source_dir+'/logger.log', level=logging.INFO)
-    
+
     # Run script to download data to source_dir
     if not gfile.exists(source_dir):
         gfile.makedirs(source_dir)
@@ -173,9 +173,9 @@ if __name__ == '__main__':
     # make_concepts_targets_and_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
     # print("Successfully created data at " + args.source_dir)
 
-    # # Make random
-    # make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
-    # print("Successfully created data at " + args.source_dir)
+    # Make random
+    make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
+    print("Successfully created data at " + args.source_dir)
 
     # # Make target data
     # make_targets(args.source_dir, args.number_of_images_per_folder)
@@ -183,4 +183,4 @@ if __name__ == '__main__':
 
     #make_imagent_color_concept(args.source_dir, args.number_of_images_per_folder)
 
-    make_imagent_fix_color_concept(args.source_dir, args.number_of_images_per_folder)
+    #make_imagent_fix_color_concept(args.source_dir, args.number_of_images_per_folder)
