@@ -281,8 +281,7 @@ def pickle_load(path):
     with open(path, mode='rb') as f:
         data = pickle.load(f)
         return data
-      
-      
+
 # .pbファイルをロードしてテキストファイルにネットワークの名前を書き込む
 def writeTensorsName(pb_file, txt_file):
     # read pb into graph_def

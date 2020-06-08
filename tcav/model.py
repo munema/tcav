@@ -147,7 +147,7 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
     self.bottlenecks_logit_gradients = {}
     for bn in self.bottlenecks_tensors:
       self.bottlenecks_logit_gradients[bn] = tf.gradients(
-          self.ends['logit'], self.bottlenecks_tensors[bn])[0]      
+          self.ends['logit'], self.bottlenecks_tensors[bn])[0]
 
   def get_gradient(self, acts, y, bottleneck_name, example):
     """Return the gradient of the loss with respect to the bottleneck_name.
@@ -169,9 +169,9 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
 
   # (変更) logit取得
   def get_logit(self, examples):
-    return self.sess.run(self.ends['logit'], {self.ends['input']: examples})    
-    
-  # (変更) logitの勾配を得る  
+    return self.sess.run(self.ends['logit'], {self.ends['input']: examples})
+
+  # (変更) logitの勾配を得る
   def get_logit_gradient(self, acts, bottleneck_name):
     return self.sess.run(self.bottlenecks_logit_gradients[bottleneck_name], {
         self.bottlenecks_tensors[bottleneck_name]: acts,
@@ -267,7 +267,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
                image_shape,
                endpoints_dict,
                scope,
-               is_keras = False):
+               is_simple = False):
     super(PublicImageModelWrapper, self).__init__(image_shape)
     self.labels = tf.io.gfile.GFile(labels_path).read().splitlines()
     self.ends = PublicImageModelWrapper.import_graph(model_fn_path,
@@ -275,12 +275,13 @@ class PublicImageModelWrapper(ImageModelWrapper):
                                                      self.image_value_range,
                                                      scope=scope)
 
-    if not is_keras:
+
+    if not is_simple:
       self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors(
         scope)
     else:
-      self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors_ver_keras(
-        scope)      
+      self.bottlenecks_tensors = PublicImageModelWrapper.get_bottleneck_tensors_ver_simple(
+        scope)
     graph = tf.get_default_graph()
 
     # Construct gradient ops.
@@ -334,10 +335,10 @@ class PublicImageModelWrapper(ImageModelWrapper):
         bn_endpoints[name] = op.outputs[0]
     print('You can choose {}'.format(list(bn_endpoints.keys())))
     return bn_endpoints
-  
-  # (変更) keras用
+
+  # (変更) 自作用
   @staticmethod
-  def get_bottleneck_tensors_ver_keras(scope):
+  def get_bottleneck_tensors_ver_simple(scope):
     """Add Inception bottlenecks and their pre-Relu versions to endpoints dict."""
     graph = tf.get_default_graph()
     bn_endpoints = {}
@@ -470,13 +471,57 @@ class KerasCNNWrapper_public(PublicImageModelWrapper):
         )
 
         self.sess = sess
-        is_keras = True
+        is_simple = True
         super(KerasCNNWrapper_public, self).__init__(sess,
                                                        model_saved_path,
                                                        labels_path,
                                                        image_shape_v3,
                                                        endpoints_v3,
                                                        scope='import',
-                                                       is_keras = is_keras
+                                                       is_simple = is_simple
                                                        )
         self.model_name = 'KerasCNNWrapper_public'
+
+class KerasInceptionV3Wrapper_public(PublicImageModelWrapper):
+    def __init__(self, sess, model_saved_path, labels_path):
+        self.image_value_range = (0, 1)
+        image_shape_v3 = [299, 299, 3]
+        endpoints_v3 = dict(
+            input='input_1:0',
+            logit='predictions/MatMul:0',
+            prediction='predictions/Softmax:0',
+        )
+
+        self.sess = sess
+        is_simple = False
+        super(KerasInceptionV3Wrapper_public, self).__init__(sess,
+                                                       model_saved_path,
+                                                       labels_path,
+                                                       image_shape_v3,
+                                                       endpoints_v3,
+                                                       scope='import',
+                                                       is_simple = is_simple
+                                                       )
+        self.model_name = 'KerasInceptionV3Wrapper_public'
+
+class KerasMnistCnnWrapper_public(PublicImageModelWrapper):
+    def __init__(self, sess, model_saved_path, labels_path):
+        self.image_value_range = (0, 1)
+        image_shape_v3 = [200, 200, 3]
+        endpoints_v3 = dict(
+            input='conv1_input:0',
+            logit='dense/MatMul:0',
+            prediction='dense/Softmax:0',
+        )
+
+        self.sess = sess
+        is_simple = True
+        super(KerasMnistCnnWrapper_public, self).__init__(sess,
+                                                       model_saved_path,
+                                                       labels_path,
+                                                       image_shape_v3,
+                                                       endpoints_v3,
+                                                       scope='import',
+                                                       is_simple = is_simple
+                                                       )
+        self.model_name = 'KerasInceptionV3Wrapper_public'

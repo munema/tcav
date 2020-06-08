@@ -15,11 +15,16 @@ output_path = 'tcav/frozen_models/inceptionv3.pb'
 assert tf.__version__ == '1.15.2', 'Tensorflow version Error. You need 1.15.2 version'
 assert output_path[-3:] == '.pb', 'Extension: output file extention is .pb'
 
+
 if os.path.exists(output_path) == False:
   os.system('git clone -b r1.15 --single-branch https://github.com/tensorflow/tensorflow.git')
-  
+
   # モデルをロード (Imagenetで事前学習済みのInceptionV3をロード)
   model = tf.keras.applications.inception_v3.InceptionV3(include_top=True, weights='imagenet', input_tensor=None, input_shape=(IMG_HEIGHT,IMG_WIDTH,3), pooling=None, classes=1000)
+
+  # summaryを保存
+  with open(output_path[:-3] + '_summary.txt', "w") as fp:
+    model.summary(print_fn=lambda x: fp.write(x + "\r\n"))
 
   # outputのノード名が必要なのでprintして確認する
   print(model.output.op.name)

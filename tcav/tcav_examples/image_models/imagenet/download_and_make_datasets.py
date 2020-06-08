@@ -131,6 +131,29 @@ def make_randoms(source_dir, number_of_images_per_folder, number_of_random_folde
     )
 
 
+def make_imagent_color_concept(source_dir, number_of_images_per_folder):
+    # make targets from imagenet
+    imagenet_dataframe = fetcher.make_imagenet_dataframe("/home/tomohiro/code/tcav/tcav/tcav_examples/image_models/imagenet/imagenet_url_map.csv")
+    color_lst = ['red','yellow','blue','green']
+    fetcher.fetch_imagenet_class_color(source_dir,
+                                       number_of_images_per_folder,
+                                       imagenet_dataframe,
+                                       folder_prefix="imagenet",
+                                       color_lst=color_lst
+    )
+
+def make_imagent_fix_color_concept(source_dir, number_of_images_per_folder):
+    # make targets from imagenet
+    imagenet_dataframe = fetcher.make_imagenet_dataframe("/home/tomohiro/code/tcav/tcav/tcav_examples/image_models/imagenet/imagenet_url_map.csv")
+    color_lst = ['blue','green','red','yellow']
+    fetcher.fetch_imagenet_class_color_fixed(source_dir,
+                                       number_of_images_per_folder,
+                                       imagenet_dataframe,
+                                       folder_prefix="imagenet",
+                                       color_lst=color_lst
+    )
+
+
 if __name__ == '__main__':
     tf.get_logger().setLevel('INFO')
     parser = argparse.ArgumentParser(description='Create examples and concepts folders.')
@@ -150,10 +173,14 @@ if __name__ == '__main__':
     # make_concepts_targets_and_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
     # print("Successfully created data at " + args.source_dir)
 
-    # Make random
-    make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
-    print("Successfully created data at " + args.source_dir)
+    # # Make random
+    # make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
+    # print("Successfully created data at " + args.source_dir)
 
     # # Make target data
     # make_targets(args.source_dir, args.number_of_images_per_folder)
     # print("Successfully created data at " + args.source_dir)
+
+    #make_imagent_color_concept(args.source_dir, args.number_of_images_per_folder)
+
+    make_imagent_fix_color_concept(args.source_dir, args.number_of_images_per_folder)

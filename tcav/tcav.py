@@ -59,7 +59,7 @@ class TCAV(object):
     # Grad points in the direction which DECREASES probability of class
     grad = np.reshape(mymodel.get_gradient(
         act, [class_id], cav.bottleneck, example), -1)
-    dot_prod = np.dot(grad, cav.get_direction(concept))    
+    dot_prod = np.dot(grad, cav.get_direction(concept))
     return dot_prod < 0
 
   @staticmethod
@@ -110,10 +110,23 @@ class TCAV(object):
           count += 1
       return float(count) / float(len(class_acts))
 
-  # (変更) - lossの勾配 から logitの勾配に変更
   @staticmethod
   def get_directional_dir(
       mymodel, target_class, concept, cav, class_acts, examples):
+    """Return the list of values of directional derivatives.
+       (Only called when the values are needed as a referece)
+    Args:
+      mymodel: a model class instance
+      target_class: one target class
+      concept: one concept
+      cav: an instance of cav
+      class_acts: activations of the examples in the target class where
+        examples[i] corresponds to class_acts[i]
+      examples: an array of examples of the target class where examples[i]
+        corresponds to class_acts[i]
+    Returns:
+      list of values of directional derivatives.
+    """
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
     for i in range(len(class_acts)):
@@ -121,14 +134,55 @@ class TCAV(object):
       if len(act.shape) == 3:
         act = np.expand_dims(act,3)
       example = examples[i]
-            
-      # grad = np.reshape(
-      #     mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
       grad = np.reshape(
-          mymodel.get_logit_gradient(act, cav.bottleneck), -1)      
+          mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
       directional_dir_vals.append(np.dot(grad, cav.get_direction(concept)))
-      
     return directional_dir_vals
+
+  @staticmethod
+  def get_directional_dir_plus(
+      mymodel, target_class, concept, cav, class_acts, examples):
+    class_id = mymodel.label_to_id(target_class)
+    directional_dir_vals = []
+    grad_vals = []
+    cav_vals = []
+    for i in range(len(class_acts)):
+      act = np.expand_dims(class_acts[i], 0)
+      if len(act.shape) == 3:
+        act = np.expand_dims(act,3)
+      example = examples[i]
+      grad = np.reshape(
+          mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+      cav_vector = cav.get_direction(concept)
+      directional_dir_vals.append(np.dot(grad, cav_vector))
+      grad_vals.append(grad_vals)
+      cav_vals.append(cav_vals)
+    return directional_dir_vals, grad_vals, cav_vals
+
+
+  # # (変更) - lossの勾配 から logitの勾配に変更
+  # @staticmethod
+  # def get_directional_dir(
+  #     mymodel, target_class, concept, cav, class_acts, examples):
+  #   class_id = mymodel.label_to_id(target_class)
+  #   directional_dir_vals = []
+  #   for i in range(len(class_acts)):
+  #     act = np.expand_dims(class_acts[i], 0)
+  #     if len(act.shape) == 3:
+  #       act = np.expand_dims(act,3)
+  #     example = examples[i]
+
+  #     # grad = np.reshape(
+  #     #     mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+  #     grad = np.reshape(
+  #         mymodel.get_logit_gradient(act, cav.bottleneck), -1)
+  #     pred = mymodel.get_predictions(examples)
+  #     logit = mymodel.get_logit(examples)
+  #     grad2 = np.reshape(mymodel.get_gradient(
+  #       act, [class_id], cav.bottleneck, example), -1)
+  #     directional_dir_vals.append(np.dot(grad, cav.get_direction(concept)))
+
+  #   return directional_dir_vals
 
   def __init__(self,
                sess,
@@ -235,7 +289,7 @@ class TCAV(object):
     else:
       pickle_dump(results, self.tcav_dir + self.project_name)
       return results
-    
+
   # (変更) 保存
   def _run_single_set(self, param, overwrite=False, run_parallel=False):
     """Run TCAV with provided for one set of (target, concepts).
@@ -288,7 +342,7 @@ class TCAV(object):
         cav_instance, acts[target_class][cav_instance.bottleneck],
         activation_generator.get_examples_for_concept(target_class),
         run_parallel=run_parallel)
-    val_directional_dirs = self.get_directional_dir(
+    val_directional_dirs, grad_vals, cav_vals = self.get_directional_dir_plus(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
         activation_generator.get_examples_for_concept(target_class))
@@ -305,26 +359,22 @@ class TCAV(object):
             cav_instance.accuracies,
         'i_up':
             i_up,
-        'val_directional_dirs_abs_mean':
-            np.mean(np.abs(val_directional_dirs)),
-        'val_directional_dirs_mean':
-            np.mean(val_directional_dirs),
-        'val_directional_dirs_std':
-            np.std(val_directional_dirs),
         'val_directional_dirs':
             val_directional_dirs,
-        'note':
-            'alpha_%s ' % (alpha),
+        'grad':
+            grad_vals,
+        'cav':
+          cav_vals,
         'alpha':
             alpha,
         'bottleneck':
             bottleneck
     }
     del acts
-    
+
     if not self.cav_dir is None:
       pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
-    
+
     return result
 
   def _process_what_to_run_expand(self, num_random_exp=100, random_concepts=None):

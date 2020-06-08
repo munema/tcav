@@ -4,7 +4,7 @@ import tcav.model  as model
 import tcav.tcav as tcav
 import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
-import os 
+import os
 import tensorflow as tf
 from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on
 
@@ -31,55 +31,51 @@ save_folder = model_to_run
 working_dir = root_dir + 'log/'  + save_folder
 # where activations are stored (only if your act_gen_wrapper does so)
 activation_dir =  working_dir+ '/activations/'
-# where CAVs are stored. 
+# where CAVs are stored.
 # You can say None if you don't wish to store any.
 if is_cav_on:
     cav_dir = working_dir + '/cavs/'
     utils.make_dir_if_not_exists(cav_dir)
 else:
     cav_dir = None
-# where TCAVs are stored. 
+# where TCAVs are stored.
 tcav_dir = working_dir + '/tcavs/'
-# where the images live. 
+# where the images live.
 source_dir = root_dir + 'tcav/dataset/for_tcav/'
-      
+
 utils.make_dir_if_not_exists(activation_dir)
 utils.make_dir_if_not_exists(working_dir)
 utils.make_dir_if_not_exists(tcav_dir)
 
-# this is a regularizer penalty parameter for linear classifier to get CAVs. 
-alphas = [0.1]   
+# this is a regularizer penalty parameter for linear classifier to get CAVs.
+alphas = [0.1]
 
 print('TCAV dataset path is {}'.format(source_dir))
 print('Results is saved at {}'.format(working_dir))
 
 sess = utils.create_session()
 
-# GRAPH_PATH is where the trained model is stored.
-# GRAPH_PATH = source_dir + "/inception5h/tensorflow_inception_graph.pb"
-GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn_2d.pb'
-# LABEL_PATH is where the labels are stored. Each line contains one class, and they are ordered with respect to their index in 
-# the logit layer. (yes, id_to_label function in the model wrapper reads from this file.)
-# For example, imagenet_comp_graph_label_strings.txt looks like:
-# dummy                                                                                      
-# kit fox
-# English setter
-# Siberian husky ...
+#=================================================================================
+# GRAPH_PATH = root_dir + "tcav/frozen_models/tensorflow_inception_graph.pb"
+# GRAPH_PATH = root_dir + 'tcav/frozen_models/inceptionv3.pb'
+# GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn_2d.pb'
+GRAPH_PATH = root_dir + 'tcav/frozen_models/mnist_3layers_cnn.pb'
 
-# LABEL_PATH = source_dir + "/inception5h/imagenet_comp_graph_label_strings.txt"
-LABEL_PATH = root_dir + 'tcav/dataset/fruit25_label_string.txt'
+# LABEL_PATH = root_dir + "tcav/dataset/tensorflow_imagenet_label_strings.txt"
+# LABEL_PATH = root_dir + "tcav/dataset/keras_imagenet_label_strings.txt"
+# LABEL_PATH = root_dir + 'tcav/dataset/fruit25_label_string.txt'
+LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist'
 
-# mymodel = model.GoogleNetWrapper_public(sess,
-#                                         GRAPH_PATH,
-#                                         LABEL_PATH)
-mymodel = model.KerasCNNWrapper_public(sess,
-                                        GRAPH_PATH,
-                                        LABEL_PATH)
+# mymodel = model.GoogleNetWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
+# mymodel = model.KerasInceptionV3Wrapper_public(sess,GRAPH_PATH,LABEL_PATH)
+# mymodel = model.KerasCNNWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
+mymodel = model.KerasMnistCnnWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
+#=================================================================================
 
 act_generator = act_gen.ImageActivationGenerator(mymodel, source_dir, activation_dir, max_examples=max_examples)
 
 tf.logging.set_verbosity(tf.logging.INFO)
-## only running num_random_exp = 10 to save some time. The paper number are reported for 500 random runs. 
+## only running num_random_exp = 10 to save some time. The paper number are reported for 500 random runs.
 mytcav = tcav.TCAV(sess,
                    target,
                    concepts,

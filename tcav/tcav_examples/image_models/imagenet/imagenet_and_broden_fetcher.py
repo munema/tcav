@@ -49,6 +49,7 @@ import tensorflow as tf
 import socket
 import random
 import string
+import numpy as np
 
 kImagenetBaseUrl = "http://imagenet.stanford.edu/api/text/imagenet.synset.geturls?wnid="
 kBrodenTexturesPath = "broden1_224/images/dtd/"
@@ -58,6 +59,108 @@ def randomname(n):
    return ''.join(random.choices(string.ascii_letters + string.digits, k=n))
 
 ####### Helper functions
+def change_near_color_img(img_path, min_sv = 0.6):
+    img = Image.open(img_path)
+    h, s, v = img.convert("HSV").split()
+    p = min_sv
+    color_dct = {}
+    color_dct['blue'] = {}
+    color_dct['blue']['angle'] = 240
+    color_dct['blue']['range'] = 25
+    color_dct['yellow'] = {}
+    color_dct['yellow']['angle'] = 60
+    color_dct['yellow']['range'] = 15
+    color_dct['red'] = {}
+    color_dct['red']['angle'] = 0
+    color_dct['red']['range'] = 10
+    color_dct['green'] = {}
+    color_dct['green']['angle'] = 120
+    color_dct['green']['range'] = 30
+
+    color_distance = {'blue' : np.abs(color_dct['blue']['angle'] - np.mean(h)),
+                      'yellow' : np.abs(color_dct['yellow']['angle'] - np.mean(h)),
+                      'red' : np.abs(color_dct['red']['angle'] - np.mean(h)),
+                      'green' : np.abs(color_dct['green']['angle'] - np.mean(h)),
+                      }
+
+    color = min(color_distance, key=color_distance.get)
+    if color_distance[color] >= color_dct[color]['range']:
+      print('not match',np.mean(h))
+      return None
+    print(color,color_dct[color]['angle'],np.mean(h))
+
+    color_p = color_dct[color]['angle']
+    lower = color_p - color_dct[color]['range']
+    # fix lower because red color's lower is minus
+    if lower < 0:
+        lower += 360
+    higher = color_p + color_dct[color]['range']
+
+    color_rand = np.random.normal(color_p, color_dct[color]['range']/2)
+    img_colored = Image.merge(
+        "HSV",
+        (
+            h.point(lambda x: x if (x > lower and x < higher) else max(0,min(color_rand,359))),
+            s.point(lambda x: max(x,int(p*255))),
+            v.point(lambda x: max(x,int(p*255)))
+        )
+    ).convert("RGB")
+
+    return color, img_colored
+
+
+def change_color_img(img_path, color, min_sv = 0.6):
+    img = Image.open(img_path)
+    h, s, v = img.convert("HSV").split()
+    p = min_sv
+    color_dct = {}
+    color_dct['blue'] = {}
+    color_dct['blue']['angle'] = 240
+    color_dct['blue']['range'] = 20
+    color_dct['yellow'] = {}
+    color_dct['yellow']['angle'] = 60
+    color_dct['yellow']['range'] = 15
+    color_dct['red'] = {}
+    color_dct['red']['angle'] = 0
+    color_dct['red']['range'] = 10
+    color_dct['green'] = {}
+    color_dct['green']['angle'] = 120
+    color_dct['green']['range'] = 30
+
+    color_name_lst = list(color_dct.keys())
+    if color not in color_name_lst:
+        color
+        print(r'Color Selection ERROR : You can choose {color_name_lst}')
+        sys.exit()
+
+    color_p = color_dct[color]['angle']
+    lower = color_p - color_dct[color]['range']
+    # fix lower because red color's lower is minus
+    if lower < 0:
+        lower += 360
+    higher = color_p + color_dct[color]['range']
+    color_rand = np.random.normal(color_p, color_dct[color]['range']/2)
+    if color_rand < 0:
+      color_rand += 360
+    elif color_rand > 360:
+      color_rand -= 360
+
+    # nomalization [0,360]→[0,255]
+    color_rand *= 255/360
+    higher *= 255/360
+    lower *= 255/360
+
+    img_colored = Image.merge(
+        "HSV",
+        (
+            h.point(lambda x: x if (x > lower and x < higher) else color_rand),
+            s.point(lambda x: max(x,int(p*255))),
+            v.point(lambda x: max(x,int(p*255)))
+        )
+    ).convert("RGB")
+
+    return img_colored
+
 """ Makes a dataframe matching imagenet labels with their respective url.
 
 Reads a csv file containing matches between imagenet synids and the url in
@@ -114,12 +217,12 @@ def download_image(path, url, examples_selected):
   return examples_selected
 
 
-# (追加) color image取得 ※保留
-def download_color_image(others_partition_folder_path, pre_partition_name, color_params, url, examples_selected):
+# (追加) color image取得
+def download_near_color_image(pre_partition_name, color_lst, url, examples_selected):
   image_name = url.split("/")[-1]
   image_name = image_name.split("?")[0]
   name = randomname(8)
-  saving_path = os.path.join(others_partition_folder_path, name + ".jpg")
+  saving_path = '/home/tomohiro/code/tcav/trash/tmp.jpg'
   urllib.request.urlretrieve(url, saving_path)
   try:
     Image.open(saving_path).verify()
@@ -128,17 +231,53 @@ def download_color_image(others_partition_folder_path, pre_partition_name, color
       tf.io.gfile.remove(saving_path)
     # (変更)全て成功したときに+1
     else:
-      examples_selected += 1
-      print(examples_selected)
+      color, img = change_near_color_img(saving_path)
+      examples_selected[color] += 1
+      img.save(os.path.join(pre_partition_name + color, name + ".jpg"))
+      tf.io.gfile.remove(
+        saving_path
+      )
   # PIL.Image.verify() throws a default exception if it finds a corrupted image.
   except Exception as e:
     tf.io.gfile.remove(
         saving_path
     )  # We need to delete it, since urllib automatically saves them.
     raise e
-  return img_color, examples_selected
+  return color, examples_selected
 
-         
+def download_color_image(partition_name, color, url, examples_selected, original_save = False):
+  image_name = url.split("/")[-1]
+  image_name = image_name.split("?")[0]
+  name = randomname(8)
+  saving_path = '/home/tomohiro/code/tcav/trash/0.jpg'
+  urllib.request.urlretrieve(url, saving_path)
+  try:
+    Image.open(saving_path).verify()
+
+    if tf.io.gfile.stat(saving_path).length < kMinFileSize:
+      tf.io.gfile.remove(saving_path)
+    # (変更)全て成功したときに+1
+    else:
+      if original_save:
+        if not os.path.exists('/home/tomohiro/code/tcav/tmp/imagenet_' + color):
+          os.mkdir('/home/tomohiro/code/tcav/tmp/imagenet_' + color)
+        origin_img_path = '/home/tomohiro/code/tcav/tmp/imagenet_' + color + '/' + name + '_origin.jpg'
+        Image.open(saving_path).save(origin_img_path)
+      img = change_color_img(saving_path, color)
+      examples_selected += 1
+      img.save(os.path.join(partition_name, name + ".jpg"))
+      tf.io.gfile.remove(
+        saving_path
+      )
+  # PIL.Image.verify() throws a default exception if it finds a corrupted image.
+  except Exception as e:
+    tf.io.gfile.remove(
+        saving_path
+    )  # We need to delete it, since urllib automatically saves them.
+    raise e
+  return color, examples_selected
+
+
 """ For a imagenet label, fetches all URLs that contain this image, from the main URL contained in the dataframe
 
   Args:
@@ -339,7 +478,7 @@ def generate_random_folders(working_directory, random_folder_prefix,
               pass # try new url
 
 # (追加) imagenetから色ベースで画像を収集 (hsv変換)
-def fetch_imagenet_class(path, number_of_images, imagenet_dataframe, folder_prefix):
+def fetch_imagenet_class_color(working_directory, number_of_examples_per_folder, imagenet_dataframe, folder_prefix, color_lst):
   if imagenet_dataframe is None:
     raise tf.errors.NotFoundError(
         None, None,
@@ -348,11 +487,9 @@ def fetch_imagenet_class(path, number_of_images, imagenet_dataframe, folder_pref
   # To speed up imagenet download, we timeout image downloads at 5 seconds.
   socket.setdefaulttimeout(3)
   imagenet_concepts = imagenet_dataframe["class_name"].values.tolist()
-  
-  color_params = {'red':[[0,10],[340,360]],'violet':[260,275],'blue':[230,260],'cyan':[175,190],'green':[100,140],'yellow':[55,65],'orange':[30,40]}
-  
+
   examples_selected = {}
-  for partition in color_params.keys():
+  for partition in color_lst:
     partition_name = folder_prefix + "_" + partition
     partition_folder_path = os.path.join(working_directory, partition_name)
     if os.path.exists(partition_folder_path):
@@ -360,24 +497,53 @@ def fetch_imagenet_class(path, number_of_images, imagenet_dataframe, folder_pref
     else:
       tf.io.gfile.makedirs(partition_folder_path)
       examples_selected[partition] = 0
-  
+
   pre_partition_name = str(os.path.join(working_directory, folder_prefix + "_"))
-      
-  # その他の色を格納
-  others_partition_name = folder_prefix + "_others"
-  others_partition_folder_path = os.path.join(working_directory, others_partition_name)
-  if not os.path.exists(others_partition_folder_path):
-    tf.io.gfile.makedirs(others_partition_folder_path)
-    
-  while np.min(examples_selected.values) < number_of_examples_per_folder:
+
+  while min(examples_selected.values()) < number_of_examples_per_folder:
     random_concept = random.choice(imagenet_concepts)
     urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
     for url in urls:
       # We are filtering out images from Flickr urls, since several of those were removed
       if "flickr" not in url:
         try:
-          img_color, examples_selected = download_color_image(others_partition_folder_path, partition_folder_path, color_params, url, examples_selected)
-          tf.logging.info("Downloaded " + img_color + 'img ' + examples_selected[img_color])
+          img_color, examples_selected = download_near_color_image(pre_partition_name, color_lst, url, examples_selected)
           break  # Break if we successfully downloaded an image
         except:
             pass # try new url
+
+
+
+# (追加) imagenetから色ベースで画像を収集 (色指定) (hsv変換)
+def fetch_imagenet_class_color_fixed(working_directory, number_of_examples_per_folder, imagenet_dataframe, folder_prefix, color_lst):
+  if imagenet_dataframe is None:
+    raise tf.errors.NotFoundError(
+        None, None,
+        "Please provide a dataframe containing the imagenet classes. Easiest way to do this is by calling make_imagenet_dataframe()"
+    )
+  # To speed up imagenet download, we timeout image downloads at 5 seconds.
+  socket.setdefaulttimeout(3)
+  imagenet_concepts = imagenet_dataframe["class_name"].values.tolist()
+
+  for partition in color_lst:
+    print(partition)
+    partition_name = folder_prefix + "_" + partition
+    partition_folder_path = os.path.join(working_directory, partition_name)
+    if os.path.exists(partition_folder_path):
+      examples_selected = len(os.listdir(partition_folder_path))
+    else:
+      tf.io.gfile.makedirs(partition_folder_path)
+      examples_selected = 0
+
+    while examples_selected < number_of_examples_per_folder:
+      random_concept = random.choice(imagenet_concepts)
+      urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
+      for url in urls:
+        # We are filtering out images from Flickr urls, since several of those were removed
+        if "flickr" not in url:
+          try:
+            print(examples_selected)
+            img_color, examples_selected = download_color_image(partition_folder_path, partition, url, examples_selected,True)
+            break  # Break if we successfully downloaded an image
+          except:
+              pass # try new url
