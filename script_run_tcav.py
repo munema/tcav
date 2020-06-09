@@ -6,7 +6,7 @@ import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
 import os
 import tensorflow as tf
-from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on
+from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, is_test
 
 # function to create project name
 
@@ -85,7 +85,8 @@ mytcav = tcav.TCAV(sess,
                    cav_dir=cav_dir,
                    tcav_dir=tcav_dir,
                    num_random_exp=num_random_exp,
-                   project_name=project_name)#10)
+                   project_name=project_name,
+                   is_test=is_test)#10)
 print ('This may take a while... Go get coffee!')
 results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
 print ('done!')

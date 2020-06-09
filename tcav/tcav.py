@@ -26,7 +26,7 @@ from tcav import utils
 import numpy as np
 import time
 import tensorflow as tf
-
+import os
 import logging
 import pathlib
 from tcav.utils import pickle_dump
@@ -141,11 +141,9 @@ class TCAV(object):
 
   @staticmethod
   def get_directional_dir_plus(
-      mymodel, target_class, concept, cav, class_acts, examples):
+      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept):
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
-    grad_vals = []
-    cav_vals = []
     for i in range(len(class_acts)):
       act = np.expand_dims(class_acts[i], 0)
       if len(act.shape) == 3:
@@ -154,10 +152,16 @@ class TCAV(object):
       grad = np.reshape(
           mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
       cav_vector = cav.get_direction(concept)
-      directional_dir_vals.append(np.dot(grad, cav_vector))
-      grad_vals.append(grad_vals)
-      cav_vals.append(cav_vals)
-    return directional_dir_vals, grad_vals, cav_vals
+      directional_dir = np.dot(grad, cav_vector)
+      directional_dir_vals.append(directional_dir)
+      if cav_dir is not None:
+        if not os.path.exists(cav_dir+'/'+project_name):
+          os.makedirs(cav_dir+'/'+project_name)
+        name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
+        pickle_dump(cav_vector,cav_dir+'/'+project_name+'/cav-'+name)
+        pickle_dump(grad,cav_dir+'/'+project_name+'/grad-'+name)
+        pickle_dump(directional_dir,cav_dir+'/'+project_name+'/dir-'+name)
+    return directional_dir_vals
 
 
   # # (変更) - lossの勾配 から logitの勾配に変更
@@ -196,7 +200,8 @@ class TCAV(object):
                tcav_dir=None,
                num_random_exp=5,
                random_concepts=None,
-               project_name=None):
+               project_name=None,
+               is_test=True):
     """Initialze tcav class.
 
     Args:
@@ -231,6 +236,7 @@ class TCAV(object):
     self.random_counterpart = random_counterpart
     self.relative_tcav = (random_concepts is not None) and (set(concepts) == set(random_concepts))
     self.project_name = project_name
+    self.is_test = is_test
     #(追加)ログファイル作成
     # logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
@@ -279,7 +285,7 @@ class TCAV(object):
       for i, param in enumerate(self.params):
         tf.logging.info('Running param %s of %s' % (i, len(self.params)))
         # 一時的にrandomをスキップ
-        if 'random500' in param.concepts[0] and self.cav_dir is None:
+        if 'random500' in param.concepts[0] and self.is_test == False:
           continue
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
@@ -342,10 +348,10 @@ class TCAV(object):
         cav_instance, acts[target_class][cav_instance.bottleneck],
         activation_generator.get_examples_for_concept(target_class),
         run_parallel=run_parallel)
-    val_directional_dirs, grad_vals, cav_vals = self.get_directional_dir_plus(
+    val_directional_dirs = self.get_directional_dir_plus(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class))
+        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1])
     result = {
         'cav_key':
             a_cav_key,
@@ -361,10 +367,6 @@ class TCAV(object):
             i_up,
         'val_directional_dirs':
             val_directional_dirs,
-        'grad':
-            grad_vals,
-        'cav':
-          cav_vals,
         'alpha':
             alpha,
         'bottleneck':
@@ -372,8 +374,7 @@ class TCAV(object):
     }
     del acts
 
-    if not self.cav_dir is None:
-      pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
+    #pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
 
     return result
 

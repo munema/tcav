@@ -357,12 +357,24 @@ def plot_concept_results(results, num_random_exp=100):
   
   # matplotlib
   fig, ax = plt.subplots()
-    
+
+
   # draw all bottlenecks individually
   for i, [bn, vals] in enumerate(plot_data.items()):
     bar = ax.bar(index + i * bar_width, vals['bn_vals'],
         bar_width, yerr=vals['bn_stds'], label=bn)
-    
+
+  xlabel_name = ''
+  if '-' in plot_concepts[0]:
+    for w in plot_concepts[0].split('-')[:-1]:
+      xlabel_name += w
+    plot_concepts = [ c.split('-')[-1] for c in plot_concepts]
+  if '_' in plot_concepts[0]:
+    for w in plot_concepts[0].split('_')[:-1]:
+      xlabel_name += w
+    plot_concepts = [ c.split('_')[-1] for c in plot_concepts]
+  xlabel_name += ' Concept'
+
   # print (plot_data)
   # set properties
   # (変更) 0.5に横線を引く
@@ -371,8 +383,10 @@ def plot_concept_results(results, num_random_exp=100):
   target_class = results[0]['target_class'].title()
   ax.set_title('{} TCAV Scores'.format(target_class))
   ax.set_ylabel('TCAV Score')
+  ax.set_xlabel(xlabel_name)
   ax.set_ylim(0, 1)
   ax.set_xticks(index + num_bottlenecks * bar_width / 2)
+  #plt.xticks(fontsize=8)
   ax.set_xticklabels(plot_concepts)
   ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
   fig.tight_layout()
