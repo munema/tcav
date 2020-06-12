@@ -89,8 +89,21 @@ for color in color_lst:
     if not os.path.exists(f'{move_path}/mnist_{color}'):
         os.mkdir(f'{move_path}/mnist_{color}')
     lst = os.listdir(output_path + '/train/' + color)
-    for i in range(1):
+    for i in range(10):
         i_lst = [s for s in lst if s.startswith(str(i))]
         for file in i_lst[:100]:
             # print(f'{output_path}/train/{color}/{file}')
             shutil.move(f'{output_path}/train/{color}/{file}',f'{move_path}/mnist_{color}/{file}')
+
+
+# move for tcav (test → shape concept)
+(_, _), (x_test, y_test) = mnist.load_data()
+move_path = '/home/tomohiro/code/tcav/tcav/dataset/for_tcav'
+for i in range(10):
+    if not os.path.exists(f'{move_path}/mnist_{i}'):
+        os.mkdir(f'{move_path}/mnist_{i}')
+    inx = np.where(y_test == i)[:100][0]
+    for j,k in enumerate(inx):
+        img = Image.fromarray(x_test[k])
+        img = img.resize((WIDTH,HEIGHT))
+        img.save(f'{move_path}/mnist_{i}/{j}.jpg')

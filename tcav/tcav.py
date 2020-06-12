@@ -141,9 +141,11 @@ class TCAV(object):
 
   @staticmethod
   def get_directional_dir_plus(
-      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept):
+      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,make_random):
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
+    cav_vector_vals = []
+    grad_vals = []
     for i in range(len(class_acts)):
       act = np.expand_dims(class_acts[i], 0)
       if len(act.shape) == 3:
@@ -154,13 +156,22 @@ class TCAV(object):
       cav_vector = cav.get_direction(concept)
       directional_dir = np.dot(grad, cav_vector)
       directional_dir_vals.append(directional_dir)
-      if cav_dir is not None:
+      cav_vector_vals.append(cav_vector)
+      grad_vals.append(grad)
+    if cav_dir is not None:
+      if make_random == False:
         if not os.path.exists(cav_dir+'/'+project_name):
           os.makedirs(cav_dir+'/'+project_name)
         name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
-        pickle_dump(cav_vector,cav_dir+'/'+project_name+'/cav-'+name)
-        pickle_dump(grad,cav_dir+'/'+project_name+'/grad-'+name)
-        pickle_dump(directional_dir,cav_dir+'/'+project_name+'/dir-'+name)
+        pickle_dump(cav_vector_vals,cav_dir+'/'+project_name+'/cav-'+name)
+        if not os.path.exists(cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class):
+          pickle_dump(grad_vals,cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class)
+      else:
+        name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
+        if not os.path.exists(cav_dir+'/cav-'+name):
+          pickle_dump(cav_vector_vals,cav_dir+'/cav-'+name)
+        if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
+          pickle_dump(grad_vals,cav_dir+'/grad-'+bottleneck+':'+target_class)
     return directional_dir_vals
 
 
@@ -201,7 +212,7 @@ class TCAV(object):
                num_random_exp=5,
                random_concepts=None,
                project_name=None,
-               is_test=True):
+               make_random=True):
     """Initialze tcav class.
 
     Args:
@@ -236,7 +247,7 @@ class TCAV(object):
     self.random_counterpart = random_counterpart
     self.relative_tcav = (random_concepts is not None) and (set(concepts) == set(random_concepts))
     self.project_name = project_name
-    self.is_test = is_test
+    self.make_random = make_random
     #(追加)ログファイル作成
     # logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
@@ -285,16 +296,18 @@ class TCAV(object):
       for i, param in enumerate(self.params):
         tf.logging.info('Running param %s of %s' % (i, len(self.params)))
         # 一時的にrandomをスキップ
-        if 'random500' in param.concepts[0] and self.is_test == False:
+        if 'random' in param.concepts[0] and self.make_random == False:
+          continue
+        elif 'random' not in param.concepts[0] and self.make_random == True:
           continue
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
         self.params), time.time() - now))
     if return_proto:
       return utils.results_to_proto(results)
-    else:
+    elif self.make_random == False:
       pickle_dump(results, self.tcav_dir + self.project_name)
-      return results
+    return results
 
   # (変更) 保存
   def _run_single_set(self, param, overwrite=False, run_parallel=False):
@@ -351,7 +364,7 @@ class TCAV(object):
     val_directional_dirs = self.get_directional_dir_plus(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1])
+        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1],self.make_random)
     result = {
         'cav_key':
             a_cav_key,
@@ -374,7 +387,8 @@ class TCAV(object):
     }
     del acts
 
-    #pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
+    if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1])):
+      pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
 
     return result
 

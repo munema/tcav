@@ -6,7 +6,7 @@ import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
 import os
 import tensorflow as tf
-from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, is_test
+from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random
 
 # function to create project name
 
@@ -28,6 +28,8 @@ print ('REMEMBER TO UPDATE YOUR_PATH (where images, models are)!')
 # the name of the parent directory that results are stored (only if you want to cache)
 project_name = create_project_name(model_to_run, bottlenecks, target, concepts, version)
 save_folder = model_to_run
+if make_random:
+    save_folder += '/random' + str(max_examples)
 working_dir = root_dir + 'log/'  + save_folder
 # where activations are stored (only if your act_gen_wrapper does so)
 activation_dir =  working_dir+ '/activations/'
@@ -86,7 +88,7 @@ mytcav = tcav.TCAV(sess,
                    tcav_dir=tcav_dir,
                    num_random_exp=num_random_exp,
                    project_name=project_name,
-                   is_test=is_test)#10)
+                   make_random=make_random)#10)
 print ('This may take a while... Go get coffee!')
 results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
 print ('done!')
