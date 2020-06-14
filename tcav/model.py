@@ -169,9 +169,10 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
 
   # (変更) logit取得
   def get_logit(self, examples):
+    #return self.sess.run(self.ends['logit'], {self.ends['input']: examples})
     return self.sess.run(self.ends['logit'], {self.ends['input']: examples})
 
-  # (変更) logitの勾配を得る
+  # (変更) logitの勾配を得る (修正の必要あり)
   def get_logit_gradient(self, acts, bottleneck_name):
     return self.sess.run(self.bottlenecks_logit_gradients[bottleneck_name], {
         self.bottlenecks_tensors[bottleneck_name]: acts,
@@ -343,7 +344,7 @@ class PublicImageModelWrapper(ImageModelWrapper):
     graph = tf.get_default_graph()
     bn_endpoints = {}
     for op in graph.get_operations():
-      if op.name.startswith(scope+'/') and 'Conv2D' in op.type:
+      if op.name.startswith(scope+'/') and 'Relu' in op.type:
         name = op.name.split('/')[1]
         bn_endpoints[name] = op.outputs[0]
     print('You can choose {}'.format(list(bn_endpoints.keys())))
@@ -510,7 +511,7 @@ class KerasMnistCnnWrapper_public(PublicImageModelWrapper):
         image_shape_v3 = [200, 200, 3]
         endpoints_v3 = dict(
             input='conv1_input:0',
-            logit='dense/MatMul:0',
+            logit='dense/BiasAdd:0',
             prediction='dense/Softmax:0',
         )
 

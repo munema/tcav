@@ -166,6 +166,9 @@ class TCAV(object):
         pickle_dump(cav_vector_vals,cav_dir+'/'+project_name+'/cav-'+name)
         if not os.path.exists(cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class):
           pickle_dump(grad_vals,cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class)
+        if not os.path.exists(cav_dir+'/predict-'+target_class):
+          class_pred = mymodel.get_predictions(examples)[:,class_id]
+          pickle_dump(cav_dir+'/predict-'+target_class)
       else:
         name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
         if not os.path.exists(cav_dir+'/cav-'+name):
@@ -356,6 +359,7 @@ class TCAV(object):
     target_class_for_compute_tcav_score = target_class
 
     cav_concept = concepts[0]
+    tmp = activation_generator.get_examples_for_concept(target_class)
     i_up = self.compute_tcav_score(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
