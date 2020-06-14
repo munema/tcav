@@ -168,7 +168,7 @@ class TCAV(object):
           pickle_dump(grad_vals,cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class)
         if not os.path.exists(cav_dir+'/predict-'+target_class):
           class_pred = mymodel.get_predictions(examples)[:,class_id]
-          pickle_dump(cav_dir+'/predict-'+target_class)
+          pickle_dump(class_pred,cav_dir+'/predict-'+target_class)
       else:
         name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
         if not os.path.exists(cav_dir+'/cav-'+name):
