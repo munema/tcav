@@ -391,8 +391,8 @@ class TCAV(object):
     }
     del acts
 
-    if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1])):
-      pickle_dump(result, self.tcav_dir + '{}:{}:{}_{}'.format(bottleneck,alpha,concepts[0],concepts[1]))
+    if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1])):
+      pickle_dump(result, self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1]))
 
     return result
 
