@@ -6,7 +6,11 @@ import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
 import os
 import tensorflow as tf
-from config import root_dir, model_to_run, bottlenecks, target, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random
+from config import root_dir, model_to_run, bottlenecks, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random
+import sys
+
+# target
+target = str(sys.argv[1])
 
 # function to create project name
 
