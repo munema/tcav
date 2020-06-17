@@ -40,7 +40,17 @@ class TCAV(object):
   CAVs.
   See https://arxiv.org/abs/1711.11279
   """
-
+  
+  def get_direction_dir_sign_true_cav(mymodel, act, cav, concept, class_id, example,acts,bottleneck,activation_generator):
+    # Grad points in the direction which DECREASES probability of class
+    grad = np.reshape(mymodel.get_gradient(
+        act, [class_id], cav.bottleneck, example),-1)
+    #真の方向ベクトルを取得
+    mean_concept = np.mean(acts[concept][bottleneck],0)
+    act_example = activation_generator.get_activations_for_examples(np.expand_dims(example,0),bottleneck)
+    dot_prod = np.dot(grad, np.reshape(mean_concept-act_example,-1))
+    return dot_prod < 0
+  
   @staticmethod
   def get_direction_dir_sign(mymodel, act, cav, concept, class_id, example):
     """Get the sign of directional derivative.
@@ -69,6 +79,10 @@ class TCAV(object):
                          cav,
                          class_acts,
                          examples,
+                         acts,
+                         bottleneck,
+                         activation_generator,
+                         true_cav=False,
                          run_parallel=True,
                          num_workers=20):
     """Compute TCAV score.
@@ -105,9 +119,13 @@ class TCAV(object):
         if len(act.shape) == 3:
           act = np.expand_dims(act,3)
         example = examples[i]
-        if TCAV.get_direction_dir_sign(
-            mymodel, act, cav, concept, class_id, example):
-          count += 1
+        if true_cav:
+          if  TCAV.get_direction_dir_sign_true_cav(mymodel, act, cav, concept, class_id, example,acts,bottleneck,activation_generator):
+            count += 1
+        else:
+          if TCAV.get_direction_dir_sign(
+              mymodel, act, cav, concept, class_id, example):
+            count += 1
       return float(count) / float(len(class_acts))
 
   @staticmethod
@@ -141,7 +159,7 @@ class TCAV(object):
 
   @staticmethod
   def get_directional_dir_plus(
-      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,make_random):
+      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,acts,activation_generator,true_cav,make_random):
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
     cav_vector_vals = []
@@ -153,8 +171,15 @@ class TCAV(object):
       example = examples[i]
       grad = np.reshape(
           mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
-      cav_vector = cav.get_direction(concept)
-      directional_dir = np.dot(grad, cav_vector)
+      if true_cav:
+        #真の方向ベクトルを取得
+        mean_concept = np.mean(acts[concept][bottleneck],0)
+        act_example = activation_generator.get_activations_for_examples(np.expand_dims(example,0),bottleneck)
+        cav_vector = np.reshape(mean_concept-act_example,-1)
+        directional_dir = np.dot(grad, cav_vector)
+      else:
+        cav_vector = cav.get_direction(concept)
+        directional_dir = np.dot(grad, cav_vector)
       directional_dir_vals.append(directional_dir)
       cav_vector_vals.append(cav_vector)
       grad_vals.append(grad)
@@ -215,7 +240,8 @@ class TCAV(object):
                num_random_exp=5,
                random_concepts=None,
                project_name=None,
-               make_random=True):
+               make_random=True,
+               true_cav=False):
     """Initialze tcav class.
 
     Args:
@@ -251,6 +277,7 @@ class TCAV(object):
     self.relative_tcav = (random_concepts is not None) and (set(concepts) == set(random_concepts))
     self.project_name = project_name
     self.make_random = make_random
+    self.true_cav = true_cav
     #(追加)ログファイル作成
     # logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
@@ -286,6 +313,9 @@ class TCAV(object):
     tf.logging.info('running %s params' % len(self.params))
     tf.logging.info('training with alpha={}'.format(self.alphas))
     results = []
+    if self.true_cav:
+      concept_lst = self.concepts
+    
     now = time.time()
     if run_parallel:
       pool = multiprocessing.Pool(num_workers)
@@ -298,11 +328,17 @@ class TCAV(object):
     else:
       for i, param in enumerate(self.params):
         tf.logging.info('Running param %s of %s' % (i, len(self.params)))
-        # 一時的にrandomをスキップ
+        # randomをスキップ
         if 'random' in param.concepts[0] and self.make_random == False:
           continue
+        # randomのみ計算
         elif 'random' not in param.concepts[0] and self.make_random == True:
           continue
+        # 真のCAVで計算
+        elif self.true_cav:
+          if param.concepts[0] not in concept_lst:
+            continue
+          concept_lst.remove(param.concepts[0])
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
         self.params), time.time() - now))
@@ -349,9 +385,10 @@ class TCAV(object):
         cav_hparams=cav_hparams,
         overwrite=overwrite)
 
-    # clean up
-    for c in concepts:
-      del acts[c]
+    if self.true_cav == False:
+      # clean up
+      for c in concepts:
+        del acts[c]
 
     # Hypo testing
     a_cav_key = CAV.cav_key(concepts, bottleneck, cav_hparams.model_type,
@@ -359,16 +396,16 @@ class TCAV(object):
     target_class_for_compute_tcav_score = target_class
 
     cav_concept = concepts[0]
-    tmp = activation_generator.get_examples_for_concept(target_class)
+    #tmp = activation_generator.get_examples_for_concept(target_class)
     i_up = self.compute_tcav_score(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
         activation_generator.get_examples_for_concept(target_class),
-        run_parallel=run_parallel)
+        acts,cav_instance.bottleneck,activation_generator,self.true_cav,run_parallel=run_parallel)
     val_directional_dirs = self.get_directional_dir_plus(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1],self.make_random)
+        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1],acts,activation_generator,self.true_cav,self.make_random)
     result = {
         'cav_key':
             a_cav_key,

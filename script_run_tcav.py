@@ -6,7 +6,7 @@ import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
 import os
 import tensorflow as tf
-from config import root_dir, model_to_run, bottlenecks, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random
+from config import root_dir, model_to_run, bottlenecks, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random,true_cav
 import sys
 
 # target
@@ -65,7 +65,7 @@ sess = utils.create_session()
 # GRAPH_PATH = root_dir + "tcav/frozen_models/tensorflow_inception_graph.pb"
 # GRAPH_PATH = root_dir + 'tcav/frozen_models/inceptionv3.pb'
 # GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn_2d.pb'
-GRAPH_PATH = root_dir + 'tcav/frozen_models/mnist_3layers_cnn.pb'
+GRAPH_PATH = root_dir + 'tcav/frozen_models/mnist_3layers_cnn-2d.pb'
 
 # LABEL_PATH = root_dir + "tcav/dataset/tensorflow_imagenet_label_strings.txt"
 # LABEL_PATH = root_dir + "tcav/dataset/keras_imagenet_label_strings.txt"
@@ -92,7 +92,8 @@ mytcav = tcav.TCAV(sess,
                    tcav_dir=tcav_dir,
                    num_random_exp=num_random_exp,
                    project_name=project_name,
-                   make_random=make_random)#10)
+                   make_random=make_random,
+                   true_cav=true_cav)#10)
 print ('This may take a while... Go get coffee!')
 results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
 print ('done!')
