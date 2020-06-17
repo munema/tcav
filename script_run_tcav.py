@@ -65,7 +65,7 @@ sess = utils.create_session()
 # GRAPH_PATH = root_dir + "tcav/frozen_models/tensorflow_inception_graph.pb"
 # GRAPH_PATH = root_dir + 'tcav/frozen_models/inceptionv3.pb'
 # GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn_2d.pb'
-GRAPH_PATH = root_dir + 'tcav/frozen_models/mnist_3layers_cnn-2d.pb'
+GRAPH_PATH = root_dir + 'tcav/frozen_models/mnist_3layers_cnn.pb'
 
 # LABEL_PATH = root_dir + "tcav/dataset/tensorflow_imagenet_label_strings.txt"
 # LABEL_PATH = root_dir + "tcav/dataset/keras_imagenet_label_strings.txt"
