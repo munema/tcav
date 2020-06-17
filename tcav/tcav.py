@@ -185,17 +185,15 @@ class TCAV(object):
       grad_vals.append(grad)
     if cav_dir is not None:
       if make_random == False:
-        if not os.path.exists(cav_dir+'/'+project_name):
-          os.makedirs(cav_dir+'/'+project_name)
-        name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
-        pickle_dump(cav_vector_vals,cav_dir+'/'+project_name+'/cav-'+name)
-        if not os.path.exists(cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class):
-          pickle_dump(grad_vals,cav_dir+'/'+project_name+'/grad-'+bottleneck+':'+target_class)
+        name = bottleneck+':'+concept+':'+negative_concept
+        pickle_dump(cav_vector_vals,cav_dir+'/cav-'+name)
+        if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
+          pickle_dump(grad_vals,cav_dir+'/grad-'+bottleneck+':'+target_class)
         if not os.path.exists(cav_dir+'/predict-'+target_class):
           class_pred = mymodel.get_predictions(examples)[:,class_id]
           pickle_dump(class_pred,cav_dir+'/predict-'+target_class)
       else:
-        name = bottleneck+':'+target_class+':'+concept+'_'+negative_concept
+        name = bottleneck+':'+concept+'_'+negative_concept
         if not os.path.exists(cav_dir+'/cav-'+name):
           pickle_dump(cav_vector_vals,cav_dir+'/cav-'+name)
         if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
