@@ -41,7 +41,7 @@ class TCAV(object):
   See https://arxiv.org/abs/1711.11279
   """
   
-  def get_direction_dir_sign_true_cav(mymodel, act, cav, concept, class_id, example,acts,bottleneck,activation_generator,cav_dir):
+  def get_direction_dir_sign_true_cav(mymodel, act, cav, concept, class_id, example,acts,bottleneck,activation_generator,cav_dir,i):
     # Grad points in the direction which DECREASES probability of class
     grad = np.reshape(mymodel.get_gradient(
         act, [class_id], cav.bottleneck, example),-1)
@@ -49,8 +49,8 @@ class TCAV(object):
     mean_concept = np.mean(acts[concept][bottleneck],0)
     act_example = activation_generator.get_activations_for_examples(np.expand_dims(example,0),bottleneck)
     true_cav = np.reshape(mean_concept-act_example,-1)
-    if not os.path.exists(cav_dir+'/' + concept + ':' + bottleneck + 'TrueCAV'):
-      pickle_dump(true_cav,cav_dir+'/' + concept + ':' + bottleneck + 'TrueCAV')
+    if not os.path.exists(cav_dir+'/' + 'cav-true:' + 'example-' + str(i) + ':' + concept + ':' + bottleneck):
+      pickle_dump(true_cav,cav_dir+'/' + 'cav-true:' + 'example-' + str(i) + ':' + concept + ':' + bottleneck)
     dot_prod = np.dot(grad, true_cav)
     return dot_prod < 0
   
@@ -84,7 +84,7 @@ class TCAV(object):
                          examples,
                          acts,
                          bottleneck,
-                         activation_generator,                         
+                         activation_generator,
                          cav_dir,
                          true_cav=False,
                          run_parallel=True,
@@ -124,7 +124,7 @@ class TCAV(object):
           act = np.expand_dims(act,3)
         example = examples[i]
         if true_cav:
-          if  TCAV.get_direction_dir_sign_true_cav(mymodel, act, cav, concept, class_id, example,acts,bottleneck,activation_generator,cav_dir):
+          if  TCAV.get_direction_dir_sign_true_cav(mymodel, act, cav, concept, class_id, example,acts,bottleneck,activation_generator,cav_dir,i):
             count += 1
         else:
           if TCAV.get_direction_dir_sign(
@@ -231,14 +231,14 @@ class TCAV(object):
       grad_vals.append(grad)
 
     if make_random == False:
-      if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
-        pickle_dump(grad_vals,cav_dir+'/grad-'+bottleneck+':'+target_class)
-      if not os.path.exists(cav_dir+'/predict-'+target_class):
+      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
+      if not os.path.exists(cav_dir+'/predict:'+target_class):
         class_pred = mymodel.get_predictions(examples)[:,class_id]
-        pickle_dump(class_pred,cav_dir+'/predict-'+target_class)
+        pickle_dump(class_pred,cav_dir+'/predict:'+target_class)
     else:
-      if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
-        pickle_dump(grad_vals,cav_dir+'/grad-'+bottleneck+':'+target_class)
+      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
     return directional_dir_vals
 
 

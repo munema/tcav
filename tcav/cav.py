@@ -90,7 +90,7 @@ class CAV(object):
     """
     # return '-'.join([str(c) for c in concepts
     #                 ]) + '-' + bottleneck + '-' + model_type + '-' + str(alpha)
-    return '-'.join([str(c) for c in concepts
+    return 'cav:' + ':'.join([str(c) for c in concepts
                     ]) + ':' + bottleneck
 
   @staticmethod

@@ -299,7 +299,7 @@ def get_dist(results):
   return dist
  
  
-def plot_concept_results(results, num_random_exp=100):
+def plot_concept_results(results, save_path = None,keyword=''):
   # helper function, returns if this is a random concept
   def is_random_concept(concept):
     return 'random500_' in concept
@@ -390,6 +390,9 @@ def plot_concept_results(results, num_random_exp=100):
   ax.set_xticklabels(plot_concepts)
   ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
   fig.tight_layout()
+  if save_path is not None:
+    xla = xlabel_name.split(' ')[0]
+    plt.savefig(f'{save_path}/{target_class}:{xla}-{keyword}.png')
   plt.show()
   
   
