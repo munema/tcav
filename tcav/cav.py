@@ -79,8 +79,10 @@ class CAV(object):
     Returns:
       a string cav_key
     """
+    # return '-'.join([str(c) for c in concepts
+    #                 ]) + '-' + bottleneck + '-' + model_type + '-' + str(alpha)
     return '-'.join([str(c) for c in concepts
-                    ]) + '-' + bottleneck + '-' + model_type + '-' + str(alpha)
+                    ]) + ':' + bottleneck
 
   @staticmethod
   def check_cav_exists(cav_dir, concepts, bottleneck, cav_hparams):
@@ -299,19 +301,18 @@ def get_or_train_cav(concepts,
   if cav_hparams is None:
     cav_hparams = CAV.default_hparams()
 
-  cav_path = None
-  # if cav_dir is not None:
-  #   utils.make_dir_if_not_exists(cav_dir)
-  #   cav_path = os.path.join(
-  #       cav_dir,
-  #       CAV.cav_key(concepts, bottleneck, cav_hparams.model_type,
-  #                   cav_hparams.alpha).replace('/', '.') + '.pkl')
+  if cav_dir is not None:
+    utils.make_dir_if_not_exists(cav_dir)
+    cav_path = os.path.join(
+        cav_dir,
+        CAV.cav_key(concepts, bottleneck, cav_hparams.model_type,
+                    cav_hparams.alpha).replace('/', '.') + '.pkl')
 
-  #   if not overwrite and tf.io.gfile.exists(cav_path):
-  #     tf.logging.debug('CAV already exists: {}'.format(cav_path))
-  #     cav_instance = CAV.load_cav(cav_path)
-  #     tf.logging.info('CAV accuracies: {}'.format(cav_instance.accuracies))
-  #     return cav_instance
+    if not overwrite and tf.io.gfile.exists(cav_path):
+      tf.logging.debug('CAV already exists: {}'.format(cav_path))
+      cav_instance = CAV.load_cav(cav_path)
+      tf.logging.info('Loaded CAV accuracies: {}'.format(cav_instance.accuracies))
+      return cav_instance
 
   tf.logging.debug('Training CAV {} - {} alpha {}'.format(
       concepts, bottleneck, cav_hparams.alpha))
