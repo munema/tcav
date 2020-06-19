@@ -354,7 +354,13 @@ class TCAV(object):
     results = []
     if self.true_cav:
       concept_lst = self.concepts
-    
+      bottleneck_lst = self.bottlenecks
+      concept_dct = {}
+      for c in self.concepts:
+        concept_dct[c] = {}
+        for b in self.bottlenecks:
+          concept_dct[c][b] = 0
+
     now = time.time()
     if run_parallel:
       pool = multiprocessing.Pool(num_workers)
@@ -375,16 +381,20 @@ class TCAV(object):
           continue
         # 真のCAVで計算
         elif self.true_cav:
-          if param.concepts[0] not in concept_lst:
+          if param.concepts[0] not in concept_lst and param.bottleneck not in bottleneck_lst:
             continue
-          concept_lst.remove(param.concepts[0])
+          elif concept_dct[param.concepts[0]][param.bottleneck] == 1:
+            continue
+          concept_dct[param.concepts[0]][param.bottleneck] = 1
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
         self.params), time.time() - now))
     if return_proto:
       return utils.results_to_proto(results)
-    elif self.make_random == False:
+    elif self.make_random == False and self.true_cav == False:
       pickle_dump(results, self.tcav_dir + self.project_name)
+    elif self.true_cav:
+      pickle_dump(results, self.tcav_dir + 'trueCAV-' + self.project_name)
     return results
 
   # (変更) 保存

@@ -26,7 +26,7 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from tcav import utils
 import tensorflow as tf
-
+from tcav.utils import pickle_dump, pickle_load
 
 class CAV(object):
   """CAV class contains methods for concept activation vector (CAV).
@@ -47,19 +47,28 @@ class CAV(object):
     """
     return tf.contrib.training.HParams(model_type='linear', alpha=.01, max_iter=1000, tol=1e-3)
 
+  # @staticmethod
+  # def load_cav(cav_path):
+  #   """Make a CAV instance from a saved CAV (pickle file).
+
+  #   Args:
+  #     cav_path: the location of the saved CAV
+
+  #   Returns:
+  #     CAV instance.
+  #   """
+  #   with tf.io.gfile.GFile(cav_path, 'rb') as pkl_file:
+  #     save_dict = pickle.load(pkl_file)
+
+  #   cav = CAV(save_dict['concepts'], save_dict['bottleneck'],
+  #             save_dict['hparams'], save_dict['saved_path'])
+  #   cav.accuracies = save_dict['accuracies']
+  #   cav.cavs = save_dict['cavs']
+  #   return cav
+
   @staticmethod
   def load_cav(cav_path):
-    """Make a CAV instance from a saved CAV (pickle file).
-
-    Args:
-      cav_path: the location of the saved CAV
-
-    Returns:
-      CAV instance.
-    """
-    with tf.io.gfile.GFile(cav_path, 'rb') as pkl_file:
-      save_dict = pickle.load(pkl_file)
-
+    save_dict = pickle_load(cav_path)
     cav = CAV(save_dict['concepts'], save_dict['bottleneck'],
               save_dict['hparams'], save_dict['saved_path'])
     cav.accuracies = save_dict['accuracies']
