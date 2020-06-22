@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 # helper function to output plot and write summary data
 def plot_results(results, random_counterpart=None, random_concepts=None, num_random_exp=100,
-    min_p_val=0.05, is_bonferroni = False, plot_random = True):
+    min_p_val=0.05, is_bonferroni = False, plot_random = True, save_path = None, keyword=''):
   """Helper function to organize results.
   When run in a notebook, outputs a matplotlib bar plot of the
   TCAV scores for all bottlenecks for each concept, replacing the
@@ -175,8 +175,18 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
         ax.text(index[j] + i * bar_width - 0.1, 0.9, "*",
             fontdict = {'weight': 'bold', 'size': 16,
             'color': bar.patches[0].get_facecolor()})
-      
-    
+
+  xlabel_name = ''
+  if '-' in plot_concepts[0]:
+    for w in plot_concepts[0].split('-')[:-1]:
+      xlabel_name += w
+    plot_concepts = [ c.split('-')[-1] for c in plot_concepts]
+  if '_' in plot_concepts[0]:
+    for w in plot_concepts[0].split('_')[:-1]:
+      xlabel_name += w
+    plot_concepts = [ c.split('_')[-1] for c in plot_concepts]
+  xlabel_name += ' Concept'
+
   # print (plot_data)
   # set properties
   # (変更) 0.5に横線を引く
@@ -186,10 +196,14 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   ax.set_title('{} TCAV Scores (* is not rejected)'.format(target_class))
   ax.set_ylabel('TCAV Score')
   ax.set_ylim(0, 1)
+  ax.set_xlabel(xlabel_name)
   ax.set_xticks(index + num_bottlenecks * bar_width / 2)
   ax.set_xticklabels(plot_concepts)
   ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
   fig.tight_layout()
+  if save_path is not None:
+    xla = xlabel_name.split(' ')[0]
+    plt.savefig(f'{save_path}/{target_class}:{xla}-{keyword}_with_random.eps')
   plt.show()
 
 
