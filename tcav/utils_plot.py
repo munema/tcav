@@ -392,7 +392,7 @@ def plot_concept_results(results, save_path = None,keyword=''):
   fig.tight_layout()
   if save_path is not None:
     xla = xlabel_name.split(' ')[0]
-    plt.savefig(f'{save_path}/{target_class}:{xla}-{keyword}.png')
+    plt.savefig(f'{save_path}/{target_class}:{xla}-{keyword}.eps')
   plt.show()
   
   
