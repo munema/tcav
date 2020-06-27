@@ -52,6 +52,10 @@ class TCAV(object):
     if not os.path.exists(cav_dir+'/' + 'cav-true:' + 'example-' + str(i) + ':' + concept + ':' + bottleneck):
       pickle_dump(true_cav,cav_dir+'/' + 'cav-true:' + 'example-' + str(i) + ':' + concept + ':' + bottleneck)
     dot_prod = np.dot(grad, true_cav)
+    #print(dot_prod)
+    v1 = -grad
+    v2 = true_cav
+    print(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
     return dot_prod < 0
   
   @staticmethod
@@ -480,10 +484,11 @@ class TCAV(object):
             bottleneck
     }
     del acts
+    print(i_up)
 
     if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1])):
       pickle_dump(result, self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1]))
-
+    あ
     return result
 
   def _process_what_to_run_expand(self, num_random_exp=100, random_concepts=None):
