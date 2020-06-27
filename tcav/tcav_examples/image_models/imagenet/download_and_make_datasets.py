@@ -145,7 +145,8 @@ def make_imagent_color_concept(source_dir, number_of_images_per_folder):
 def make_imagent_fix_color_concept(source_dir, number_of_images_per_folder):
     # make targets from imagenet
     imagenet_dataframe = fetcher.make_imagenet_dataframe("/home/tomohiro/code/tcav/tcav/tcav_examples/image_models/imagenet/imagenet_url_map.csv")
-    color_lst = ['blue','green','red','yellow']
+    color_lst = ['red','yellow','blue','green','purple']
+    #color_lst = ['purple']
     fetcher.fetch_imagenet_class_color_fixed(source_dir,
                                        number_of_images_per_folder,
                                        imagenet_dataframe,
@@ -174,8 +175,8 @@ if __name__ == '__main__':
     # print("Successfully created data at " + args.source_dir)
 
     # Make random
-    make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
-    print("Successfully created data at " + args.source_dir)
+    # make_randoms(args.source_dir, args.number_of_images_per_folder, args.number_of_random_folders)
+    # print("Successfully created data at " + args.source_dir)
 
     # # Make target data
     # make_targets(args.source_dir, args.number_of_images_per_folder)
@@ -183,4 +184,4 @@ if __name__ == '__main__':
 
     #make_imagent_color_concept(args.source_dir, args.number_of_images_per_folder)
 
-    #make_imagent_fix_color_concept(args.source_dir, args.number_of_images_per_folder)
+    make_imagent_fix_color_concept(args.source_dir, args.number_of_images_per_folder)

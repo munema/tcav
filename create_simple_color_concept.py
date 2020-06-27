@@ -5,9 +5,9 @@ import numpy as np
 
 height = 200
 width = 200
-num_img = 100
+num_img = 200
 dataset_path = '/home/tomohiro/code/tcav/tcav/dataset/for_tcav'
-noise_std = 20
+noise_std = 30
 
 blank = np.zeros((height, width, 3))
 color_lst = {}
@@ -21,7 +21,7 @@ color_lst['green'] = [0,128,0]
 
 for i, color in enumerate(color_lst):
     blank = np.zeros((height, width, 3))
-    if not os.path.exists(dataset_path + '/smiple-' + color):
+    if not os.path.exists(dataset_path + '/simple-' + color):
         os.mkdir(dataset_path + '/simple-' + color)
     for j in range(num_img):
         np.random.seed(seed=i+j)

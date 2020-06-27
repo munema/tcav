@@ -115,17 +115,20 @@ def change_color_img(img_path, color, min_sv = 0.6):
     p = min_sv
     color_dct = {}
     color_dct['blue'] = {}
-    color_dct['blue']['angle'] = 240
-    color_dct['blue']['range'] = 20
+    color_dct['blue']['angle'] = 225
+    color_dct['blue']['range'] = 15
     color_dct['yellow'] = {}
-    color_dct['yellow']['angle'] = 60
-    color_dct['yellow']['range'] = 15
+    color_dct['yellow']['angle'] = 55
+    color_dct['yellow']['range'] = 5
     color_dct['red'] = {}
     color_dct['red']['angle'] = 0
     color_dct['red']['range'] = 10
     color_dct['green'] = {}
     color_dct['green']['angle'] = 120
     color_dct['green']['range'] = 30
+    color_dct['purple'] = {}
+    color_dct['purple']['angle'] = 280
+    color_dct['purple']['range'] = 10
 
     color_name_lst = list(color_dct.keys())
     if color not in color_name_lst:

@@ -29,7 +29,7 @@ import tensorflow as tf
 import os
 import logging
 import pathlib
-from tcav.utils import pickle_dump
+from tcav.utils import pickle_dump, pickle_load
 
 class TCAV(object):
   """TCAV object: runs TCAV for one target and a set of concepts.
@@ -52,10 +52,6 @@ class TCAV(object):
     if not os.path.exists(cav_dir+'/' + 'cav-true:' + 'example-' + str(i) + ':' + concept + ':' + bottleneck):
       pickle_dump(true_cav,cav_dir+'/' + 'cav-true:' + 'example-' + str(i) + ':' + concept + ':' + bottleneck)
     dot_prod = np.dot(grad, true_cav)
-    #print(dot_prod)
-    v1 = -grad
-    v2 = true_cav
-    print(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
     return dot_prod < 0
   
   @staticmethod
@@ -213,14 +209,33 @@ class TCAV(object):
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
     cav_vector_vals = []
-    grad_vals = []
+    
+    if os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+      grad_vals = pickle_load(cav_dir+'/grad:'+bottleneck+':'+target_class)
+    else:
+      grad_vals = []
+    if os.path.exists(cav_dir+'/predict:'+target_class):
+      class_pred = pickle_load(cav_dir+'/predict:'+target_class)    
+    else:
+      class_pred = []
+    
     for i in range(len(class_acts)):
       act = np.expand_dims(class_acts[i], 0)
       if len(act.shape) == 3:
         act = np.expand_dims(act,3)
       example = examples[i]
-      grad = np.reshape(
+      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        grad = np.reshape(
           mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+      else:
+        grad = grad_vals[i]
+        _grad = np.reshape(
+          mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+      if not os.path.exists(cav_dir+'/predict:'+target_class): 
+        pred = mymodel.get_predictions(np.expand_dims(example,0))[:,class_id]
+      else:
+        pred = class_pred[i]
+    
       if true_cav:
         #真の方向ベクトルを取得
         mean_concept = np.mean(acts[concept][bottleneck],0)
@@ -229,10 +244,13 @@ class TCAV(object):
         directional_dir = np.dot(grad, cav_vector)
       else:
         cav_vector = cav.get_direction(concept)
-        directional_dir = np.dot(grad, cav_vector)
+        directional_dir = np.dot(-(1-pred)*grad, cav_vector)
       directional_dir_vals.append(directional_dir)
       cav_vector_vals.append(cav_vector)
-      grad_vals.append(grad)
+      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        grad_vals.append(grad)
+      if not os.path.exists(cav_dir+'/predict:'+target_class):       
+        class_pred.append(pred)
 
     if make_random == False:
       if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
@@ -484,11 +502,9 @@ class TCAV(object):
             bottleneck
     }
     del acts
-    print(i_up)
 
     if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1])):
       pickle_dump(result, self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1]))
-    あ
     return result
 
   def _process_what_to_run_expand(self, num_random_exp=100, random_concepts=None):
