@@ -91,7 +91,7 @@ def get_4_concat(im1, im2, im3, im4):
   
   
 multi_shape_concept = ['roundness','straight','sharpness']
-single_shape_concept = ['v_line','h_line','circle','half_circle','sharp']
+single_shape_concept = ['v-line','h-line','circle','half-circle','sharp']
 save_path = root_dir + 'tcav/dataset/for_tcav/'
 
 np.random.seed(42)
@@ -193,7 +193,7 @@ for concept in single_shape_concept:
             os.mkdir(save_path + '/' + concept)
         im.save(save_path + '/' + concept + '/' + str(i) + '.jpg')
         
-  elif concept == 'half_circle':
+  elif concept == 'half-circle':
       for i in range(max_examples):
         _min = 0.8
         _max = 1
@@ -209,7 +209,7 @@ for concept in single_shape_concept:
             os.mkdir(save_path + '/' + concept)
         im.save(save_path + '/' + concept + '/' + str(i) + '.jpg')
 
-  elif concept == 'v_line':
+  elif concept == 'v-line':
       for i in range(max_examples):
         _min = 0.8
         _max = 1
@@ -225,7 +225,7 @@ for concept in single_shape_concept:
             os.mkdir(save_path + '/' + concept)
         im.save(save_path + '/' + concept + '/' + str(i) + '.jpg')
 
-  elif concept == 'h_line':
+  elif concept == 'h-line':
       for i in range(max_examples):
         _min = 0.8
         _max = 1
