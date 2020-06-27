@@ -496,7 +496,7 @@ def fetch_imagenet_class_color(working_directory, number_of_examples_per_folder,
 
   examples_selected = {}
   for partition in color_lst:
-    partition_name = folder_prefix + "_" + partition
+    partition_name = folder_prefix + "-" + partition
     partition_folder_path = os.path.join(working_directory, partition_name)
     if os.path.exists(partition_folder_path):
       examples_selected[partition] = len(os.listdir(partition_folder_path))
@@ -504,7 +504,7 @@ def fetch_imagenet_class_color(working_directory, number_of_examples_per_folder,
       tf.io.gfile.makedirs(partition_folder_path)
       examples_selected[partition] = 0
 
-  pre_partition_name = str(os.path.join(working_directory, folder_prefix + "_"))
+  pre_partition_name = str(os.path.join(working_directory, folder_prefix + "-"))
 
   while min(examples_selected.values()) < number_of_examples_per_folder:
     random_concept = random.choice(imagenet_concepts)
@@ -533,7 +533,7 @@ def fetch_imagenet_class_color_fixed(working_directory, number_of_examples_per_f
 
   for partition in color_lst:
     print(partition)
-    partition_name = folder_prefix + "_" + partition
+    partition_name = folder_prefix + "-" + partition
     partition_folder_path = os.path.join(working_directory, partition_name)
     if os.path.exists(partition_folder_path):
       examples_selected = len(os.listdir(partition_folder_path))
