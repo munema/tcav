@@ -317,11 +317,14 @@ def get_or_train_cav(concepts,
         CAV.cav_key(concepts, bottleneck, cav_hparams.model_type,
                     cav_hparams.alpha).replace('/', '.') + '.pkl')
 
-    if not overwrite and tf.io.gfile.exists(cav_path):
-      tf.logging.debug('CAV already exists: {}'.format(cav_path))
-      cav_instance = CAV.load_cav(cav_path)
-      tf.logging.info('Loaded CAV accuracies: {}'.format(cav_instance.accuracies))
-      return cav_instance
+    if not overwrite and os.path.exists(cav_path):
+      try:
+        tf.logging.debug('CAV already exists: {}'.format(cav_path))
+        cav_instance = CAV.load_cav(cav_path)
+        tf.logging.info('Loaded CAV accuracies: {}'.format(cav_instance.accuracies))
+        return cav_instance
+      except:
+        tf.logging.info('Fail loading CAV. Now calculating...')
 
   tf.logging.debug('Training CAV {} - {} alpha {}'.format(
       concepts, bottleneck, cav_hparams.alpha))

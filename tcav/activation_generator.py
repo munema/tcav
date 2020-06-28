@@ -80,8 +80,14 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
           # with tf.io.gfile.GFile(acts_path, 'rb') as f:
           #   acts[concept][bottleneck_name] = np.load(
           #       f, allow_pickle=True).squeeze()
-          acts[concept][bottleneck_name] = pickle_load(acts_path).squeeze()
-          tf.logging.info('Loaded ' + acts_path)
+          try:
+            acts[concept][bottleneck_name] = pickle_load(acts_path).squeeze()
+            tf.logging.debug('Loaded ' + acts_path)
+          except:
+            tf.logging.info('Fail loading Activation. Now calculating...')
+            acts[concept][bottleneck_name] = self.get_activations_for_concept(
+              concept, bottleneck_name)
+
         else:
           acts[concept][bottleneck_name] = self.get_activations_for_concept(
               concept, bottleneck_name)
