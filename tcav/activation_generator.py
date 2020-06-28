@@ -26,6 +26,7 @@ import numpy as np
 import PIL.Image
 import six
 import tensorflow as tf
+from tcav.utils import pickle_dump, pickle_load
 
 
 class ActivationGeneratorInterface(six.with_metaclass(ABCMeta, object)):
@@ -74,21 +75,23 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
       for bottleneck_name in bottleneck_names:
         acts_path = os.path.join(self.acts_dir, 'acts_{}_{}'.format(
             concept, bottleneck_name)) if self.acts_dir else None
-        if acts_path and tf.io.gfile.exists(acts_path):
-          with tf.io.gfile.GFile(acts_path, 'rb') as f:
-            acts[concept][bottleneck_name] = np.load(
-                f, allow_pickle=True).squeeze()
-            tf.logging.debug('Loaded {} shape {}'.format(
-                acts_path, acts[concept][bottleneck_name].shape))
+        if acts_path and os.path.exists(acts_path):
+        # if acts_path and tf.io.gfile.exists(acts_path):
+          # with tf.io.gfile.GFile(acts_path, 'rb') as f:
+          #   acts[concept][bottleneck_name] = np.load(
+          #       f, allow_pickle=True).squeeze()
+          acts[concept][bottleneck_name] = pickle_load(acts_path).squeeze()
+          tf.logging.info('Loaded ' + acts_path)
         else:
           acts[concept][bottleneck_name] = self.get_activations_for_concept(
               concept, bottleneck_name)
           if acts_path:
-            tf.logging.debug('{} does not exist, Making one...'.format(
+            tf.logging.info('{} does not exist, Making one...'.format(
                 acts_path))
-            tf.io.gfile.mkdir(os.path.dirname(acts_path))
-            with tf.io.gfile.GFile(acts_path, 'w') as f:
-              np.save(f, acts[concept][bottleneck_name], allow_pickle=False)
+            # tf.io.gfile.mkdir(os.path.dirname(acts_path))
+            # with tf.io.gfile.GFile(acts_path, 'w') as f:
+            #   np.save(f, acts[concept][bottleneck_name], allow_pickle=False)
+            pickle_dump(acts[concept][bottleneck_name], acts_path)
     return acts
 
 
