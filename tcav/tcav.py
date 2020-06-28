@@ -399,7 +399,7 @@ class TCAV(object):
         if 'random' in param.concepts[0] and self.make_random == False:
           continue
         # randomのみ計算
-        elif 'random' not in param.concepts[0] and self.make_random == True:
+        elif self.make_random == True and ('random' not in param.concepts[0] or os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(param.bottleneck,param.target_class,param.alpha,param.concepts[0],param.concepts[1]))):
           continue
         # 真のCAVで計算
         elif self.true_cav:
@@ -407,6 +407,7 @@ class TCAV(object):
             continue
           elif concept_dct[param.concepts[0]][param.bottleneck] == 1:
             continue
+          
           concept_dct[param.concepts[0]][param.bottleneck] = 1
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
