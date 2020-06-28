@@ -55,7 +55,7 @@ class TCAV(object):
     return dot_prod < 0
   
   @staticmethod
-  def get_direction_dir_sign(mymodel, act, cav, concept, class_id, example):
+  def get_direction_dir_sign(mymodel, act, cav, concept, class_id, example, grad_vals, i):
     """Get the sign of directional derivative.
 
     Args:
@@ -70,8 +70,11 @@ class TCAV(object):
         sign of the directional derivative
     """
     # Grad points in the direction which DECREASES probability of class
-    grad = np.reshape(mymodel.get_gradient(
-        act, [class_id], cav.bottleneck, example), -1)
+    if len(grad_vals) == 0:
+      grad = np.reshape(mymodel.get_gradient(
+          act, [class_id], cav.bottleneck, example), -1)
+    else:
+      grad = grad_vals[i]
     dot_prod = np.dot(grad, cav.get_direction(concept))
     return dot_prod < 0
 
@@ -107,6 +110,11 @@ class TCAV(object):
         TCAV score (i.e., ratio of pictures that returns negative dot product
         wrt loss).
     """
+    # load grad
+    if os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+      grad_vals = pickle_load(cav_dir+'/grad:'+bottleneck+':'+target_class)
+    else:
+      grad_vals = []
     count = 0
     class_id = mymodel.label_to_id(target_class)
     if run_parallel:
@@ -128,7 +136,7 @@ class TCAV(object):
             count += 1
         else:
           if TCAV.get_direction_dir_sign(
-              mymodel, act, cav, concept, class_id, example):
+              mymodel, act, cav, concept, class_id, example, grad_vals, i):
             count += 1
       return float(count) / float(len(class_acts))
 
@@ -162,48 +170,6 @@ class TCAV(object):
     return directional_dir_vals
 
   @staticmethod
-  # def get_directional_dir_plus(
-  #     mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,acts,activation_generator,true_cav,make_random):
-  #   class_id = mymodel.label_to_id(target_class)
-  #   directional_dir_vals = []
-  #   cav_vector_vals = []
-  #   grad_vals = []
-  #   for i in range(len(class_acts)):
-  #     act = np.expand_dims(class_acts[i], 0)
-  #     if len(act.shape) == 3:
-  #       act = np.expand_dims(act,3)
-  #     example = examples[i]
-  #     grad = np.reshape(
-  #         mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
-  #     if true_cav:
-  #       #真の方向ベクトルを取得
-  #       mean_concept = np.mean(acts[concept][bottleneck],0)
-  #       act_example = activation_generator.get_activations_for_examples(np.expand_dims(example,0),bottleneck)
-  #       cav_vector = np.reshape(mean_concept-act_example,-1)
-  #       directional_dir = np.dot(grad, cav_vector)
-  #     else:
-  #       cav_vector = cav.get_direction(concept)
-  #       directional_dir = np.dot(grad, cav_vector)
-  #     directional_dir_vals.append(directional_dir)
-  #     cav_vector_vals.append(cav_vector)
-  #     grad_vals.append(grad)
-  #   if cav_dir is not None:
-  #     if make_random == False:
-  #       name = bottleneck+':'+concept+':'+negative_concept
-  #       pickle_dump(cav_vector_vals,cav_dir+'/cav-'+name)
-  #       if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
-  #         pickle_dump(grad_vals,cav_dir+'/grad-'+bottleneck+':'+target_class)
-  #       if not os.path.exists(cav_dir+'/predict-'+target_class):
-  #         class_pred = mymodel.get_predictions(examples)[:,class_id]
-  #         pickle_dump(class_pred,cav_dir+'/predict-'+target_class)
-  #     else:
-  #       name = bottleneck+':'+concept+':'+negative_concept
-  #       if not os.path.exists(cav_dir+'/cav-'+name):
-  #         pickle_dump(cav_vector_vals,cav_dir+'/cav-'+name)
-  #       if not os.path.exists(cav_dir+'/grad-'+bottleneck+':'+target_class):
-  #         pickle_dump(grad_vals,cav_dir+'/grad-'+bottleneck+':'+target_class)
-  #   return directional_dir_vals
-
   def get_directional_dir_plus(
       mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,acts,activation_generator,true_cav,make_random):
     class_id = mymodel.label_to_id(target_class)
@@ -229,8 +195,6 @@ class TCAV(object):
           mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
       else:
         grad = grad_vals[i]
-        _grad = np.reshape(
-          mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
       if not os.path.exists(cav_dir+'/predict:'+target_class): 
         pred = mymodel.get_predictions(np.expand_dims(example,0))[:,class_id]
       else:
