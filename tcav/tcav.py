@@ -216,15 +216,12 @@ class TCAV(object):
       if not os.path.exists(cav_dir+'/predict:'+target_class):       
         class_pred.append(pred)
 
-    if make_random == False:
-      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
-        pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
-      if not os.path.exists(cav_dir+'/predict:'+target_class):
-        class_pred = mymodel.get_predictions(examples)[:,class_id]
-        pickle_dump(class_pred,cav_dir+'/predict:'+target_class)
-    else:
-      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
-        pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
+    if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+      pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
+    if not os.path.exists(cav_dir+'/predict:'+target_class):
+      class_pred = mymodel.get_predictions(examples)[:,class_id]
+      pickle_dump(class_pred,cav_dir+'/predict:'+target_class)
+
     return directional_dir_vals
 
 
