@@ -11,8 +11,6 @@ import sys
 
 # target
 target = str(sys.argv[1])
-if type(target) is str:
-    target = [target]
 
 # function to create project name
 
@@ -35,6 +33,7 @@ save_folder = model_to_run
 if make_random:
     save_folder += '/random' + str(max_examples)
 working_dir = root_dir + 'log/'  + save_folder
+project_name = create_project_name(model_to_run, bottlenecks, target, concepts, version)
 # where activations are stored (only if your act_gen_wrapper does so)
 activation_dir =  working_dir+ '/activations/'
 # where CAVs are stored.
@@ -83,25 +82,21 @@ act_generator = act_gen.ImageActivationGenerator(mymodel, source_dir, activation
 tf.logging.set_verbosity(tf.logging.INFO)
 ## only running num_random_exp = 10 to save some time. The paper number are reported for 500 random runs.
 
-print(len(target))
-for t in target:
-    project_name = create_project_name(model_to_run, bottlenecks, t, concepts, version)
-    print(project_name)
 
-    mytcav = tcav.TCAV(sess,
-                    t,
-                    concepts,
-                    bottlenecks,
-                    act_generator,
-                    alphas,
-                    cav_dir=cav_dir,
-                    tcav_dir=tcav_dir,
-                    num_random_exp=num_random_exp,
-                    project_name=project_name,
-                    make_random=make_random,
-                    true_cav=true_cav)#10)
-    print ('This may take a while... Go get coffee!')
-    results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
-    print ('done!')
+mytcav = tcav.TCAV(sess,
+                target,
+                concepts,
+                bottlenecks,
+                act_generator,
+                alphas,
+                cav_dir=cav_dir,
+                tcav_dir=tcav_dir,
+                num_random_exp=num_random_exp,
+                project_name=project_name,
+                make_random=make_random,
+                true_cav=true_cav)#10)
+print ('This may take a while... Go get coffee!')
+results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
+print ('done!')
 
 # utils_plot.plot_results(results, num_random_exp=num_random_exp)
