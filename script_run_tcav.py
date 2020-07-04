@@ -60,20 +60,10 @@ print('Results is saved at {}'.format(working_dir))
 
 sess = utils.create_session()
 
-#=================================================================================
-# GRAPH_PATH = root_dir + "tcav/frozen_models/tensorflow_inception_graph.pb"
-# GRAPH_PATH = root_dir + 'tcav/frozen_models/inceptionv3.pb'
-# GRAPH_PATH = root_dir + 'tcav/frozen_models/fruit_4layers_cnn_2d.pb'
-GRAPH_PATH = root_dir + 'tcav/frozen_models/mnist_number_2layers_cnn.pb'
+#===============================================================================
+GRAPH_PATH = root_dir + 'tcav/frozen_models/normal_mnist_2layers_cnn.pb'
+LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist-color-number'
 
-# LABEL_PATH = root_dir + "tcav/dataset/tensorflow_imagenet_label_strings.txt"
-# LABEL_PATH = root_dir + "tcav/dataset/keras_imagenet_label_strings.txt"
-# LABEL_PATH = root_dir + 'tcav/dataset/fruit25_label_string.txt'
-LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist_number'
-
-# mymodel = model.GoogleNetWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
-# mymodel = model.KerasInceptionV3Wrapper_public(sess,GRAPH_PATH,LABEL_PATH)
-# mymodel = model.KerasCNNWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
 mymodel = model.KerasMnistCnnWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
 #=================================================================================
 

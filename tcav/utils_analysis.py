@@ -130,6 +130,18 @@ def get_cav(path, bottleneck, concept):
         cav_lst.append(cav_values)
   return cav_lst
 
+def get_random_cav(path, bottleneck):
+  cav_lst = []
+  for cav_dir in os.listdir(path):
+      if cav_dir.split(':')[0] != 'cav':
+          continue
+      t, c, nc, b = cav_dir.split(':')
+      b = b.split('.')[0]
+      if b == bottleneck and 'random500_' in c:
+        cav_values = np.array(pickle_load(path + '/' + cav_dir)['cavs'][0])
+        cav_lst.append(cav_values)
+  return cav_lst
+
 # 真のCAVの平均を得る
 def get_true_cav_mean(path, bottleneck, concept):
     cnt = 0
@@ -145,9 +157,6 @@ def get_true_cav_mean(path, bottleneck, concept):
             cnt += 1
     cav_values /= cnt
     return cav_values
-
-def cos_sim(v1, v2):
-    return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
 
 
 # sensitivityを得る

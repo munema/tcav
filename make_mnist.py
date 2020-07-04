@@ -1,55 +1,3 @@
-# import os
-# import tensorflow as tf
-# from tensorflow.keras.datasets import mnist
-# from PIL import Image, ImageOps
-# import numpy as np
-# from tqdm import tqdm
-# import argparse
-# import shutil
-
-# # output path
-# output_path = '/home/tomohiro/code/tcav/tcav/dataset/for_train/Mnist' 
-# if not os.path.exists(output_path):
-#     os.mkdir(output_path)
-
-# if not os.path.exists(output_path + '/train'):
-#     os.mkdir(output_path + '/train')
-
-# if not os.path.exists(output_path + '/test'):
-#     os.mkdir(output_path + '/test')
-
-# # mnist load
-# (x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-# # output size
-# WIDTH = 200
-# HEIGHT = 200
-
-# for i in range(10):
-#     train_inx = np.where(y_train == i)[0]
-#     np.random.seed(seed = 32)
-#     np.random.shuffle(train_inx)
-#     len_train = len(train_inx)
-
-#     test_inx = np.where(y_test == i)[0]
-#     np.random.seed(seed = 32)
-#     np.random.shuffle(test_inx)
-#     len_test = len(test_inx) 
-    
-#     if not os.path.exists(output_path + '/train/mnist-' + str(i)):
-#         os.mkdir(output_path + '/train/mnist-' + str(i))
-#     if not os.path.exists(output_path + '/test/mnist-' + str(i)):
-#         os.mkdir(output_path + '/test/mnist-' + str(i))
-
-#     for k in range(len_train):
-#         img = Image.fromarray(x_train[train_inx][k]).convert('RGB').resize((WIDTH, HEIGHT))
-#         img.save(f'{output_path}/train/mnist-{i}/{i}_{k}.jpg')
-
-#     for k in range(len_test):
-#         img = Image.fromarray(x_test[test_inx][k]).convert('RGB').resize((WIDTH, HEIGHT))
-#         img.save(f'{output_path}/test/mnist-{i}/{i}_{k}.jpg')
-        
-        
 import os
 import tensorflow as tf
 from tensorflow.keras.datasets import mnist
@@ -59,12 +7,6 @@ from tqdm import tqdm
 import argparse
 import shutil
 
-# parser = argparse.ArgumentParser(description='Create Colored (Red, Blue, Yelllow, Green, Purple) MNIST dataset.')
-# parser.add_argument('--output_dir', type=str,
-#                     help='Name for the directory where we will create the data.')
-# parser.add_argument('--noise_std', type=int,
-#                     help='Noise std on normal distribution to add RGB')
-
 # number or color
 output_label = 'number'
 
@@ -72,6 +14,7 @@ output_label = 'number'
 output_path = '/home/tomohiro/code/tcav/tcav/dataset/for_train/mnist'
 #output_path = '/home/tomohiro/code/tcav/tmp/Colored_mnist'
 
+move_path = '/home/tomohiro/code/tcav/tcav/dataset/for_tcav'
 
 if not os.path.exists(output_path + '/train'):
     os.mkdir(output_path + '/train')
@@ -152,8 +95,12 @@ for r in rang:
             i_lst = [s for s in lst if i in s]
             out_path = str(r)
 
+
+        if not os.path.exists(f'{move_path}/-mnist-{out_path}'):
+            os.mkdir(f'{move_path}/-mnist-{out_path}')
         for file in i_lst[:50]:
             # print(f'{output_path}/train/{color}/{file}')
-            os.remove(f'{output_path}/train/mnist-{out_path}/{file}')
+            # os.remove(f'{output_path}/train/mnist-{out_path}/{file}')
+            shutil.move(f'{output_path}/train/mnist-{out_path}/{file}',f'{move_path}/-mnist-{out_path}/{file}')
 
         

@@ -217,16 +217,7 @@ class TCAV(object):
         grad_vals.append(grad)
       if not os.path.exists(cav_dir+'/predict:'+target_class):       
         class_pred.append(pred)
-      logit_grad = np.reshape(mymodel.get_logit_gradient(act,class_id,cav.bottleneck).squeeze(),-1)
-      _grad = np.reshape(mymodel.get_gradient(act, [class_id], cav.bottleneck, example).squeeze(),-1)
-      print(np.max(_grad))
-      arg_max_grad = np.argmax(_grad)
-      #print(mymodel.get_logit(np.expand_dims(example,0)))
-      s = mymodel.get_predictions(np.expand_dims(example,0))[0][mymodel.label_to_id(target_class)]
-      print(-logit_grad[arg_max_grad]*(1-s))
-      print(s)
-      print(cos_sim(_grad,-logit_grad*(1-s)))
-      sys.exit()
+      #logit_grad = np.reshape(mymodel.get_logit_gradient(act,class_id,cav.bottleneck).squeeze(),-1)
 
     if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
       pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
