@@ -30,6 +30,8 @@ import os
 import logging
 import pathlib
 from tcav.utils import pickle_dump, pickle_load
+from tcav.utils_analysis import cos_sim
+import sys
 
 class TCAV(object):
   """TCAV object: runs TCAV for one target and a set of concepts.
@@ -215,6 +217,16 @@ class TCAV(object):
         grad_vals.append(grad)
       if not os.path.exists(cav_dir+'/predict:'+target_class):       
         class_pred.append(pred)
+      logit_grad = np.reshape(mymodel.get_logit_gradient(act,class_id,cav.bottleneck).squeeze(),-1)
+      _grad = np.reshape(mymodel.get_gradient(act, [class_id], cav.bottleneck, example).squeeze(),-1)
+      print(np.max(_grad))
+      arg_max_grad = np.argmax(_grad)
+      #print(mymodel.get_logit(np.expand_dims(example,0)))
+      s = mymodel.get_predictions(np.expand_dims(example,0))[0][mymodel.label_to_id(target_class)]
+      print(-logit_grad[arg_max_grad]*(1-s))
+      print(s)
+      print(cos_sim(_grad,-logit_grad*(1-s)))
+      sys.exit()
 
     if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
       pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
@@ -223,31 +235,6 @@ class TCAV(object):
       pickle_dump(class_pred,cav_dir+'/predict:'+target_class)
 
     return directional_dir_vals
-
-
-  # # (変更) - lossの勾配 から logitの勾配に変更
-  # @staticmethod
-  # def get_directional_dir(
-  #     mymodel, target_class, concept, cav, class_acts, examples):
-  #   class_id = mymodel.label_to_id(target_class)
-  #   directional_dir_vals = []
-  #   for i in range(len(class_acts)):
-  #     act = np.expand_dims(class_acts[i], 0)
-  #     if len(act.shape) == 3:
-  #       act = np.expand_dims(act,3)
-  #     example = examples[i]
-
-  #     # grad = np.reshape(
-  #     #     mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
-  #     grad = np.reshape(
-  #         mymodel.get_logit_gradient(act, cav.bottleneck), -1)
-  #     pred = mymodel.get_predictions(examples)
-  #     logit = mymodel.get_logit(examples)
-  #     grad2 = np.reshape(mymodel.get_gradient(
-  #       act, [class_id], cav.bottleneck, example), -1)
-  #     directional_dir_vals.append(np.dot(grad, cav.get_direction(concept)))
-
-  #   return directional_dir_vals
 
   def __init__(self,
                sess,

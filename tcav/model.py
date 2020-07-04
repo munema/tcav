@@ -142,12 +142,11 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
 
   # (変更)logitの勾配作成
   def _make_logit_gradient_tensors(self):
-    """Makes gradient tensors for all bottleneck tensors.
-    """
+    self.y_class_label = tf.placeholder(tf.int64)
     self.bottlenecks_logit_gradients = {}
     for bn in self.bottlenecks_tensors:
       self.bottlenecks_logit_gradients[bn] = tf.gradients(
-          self.ends['logit'], self.bottlenecks_tensors[bn])[0]
+          self.ends['logit'][:,self.y_class_label], self.bottlenecks_tensors[bn])[0]
 
   def get_gradient(self, acts, y, bottleneck_name, example):
     """Return the gradient of the loss with respect to the bottleneck_name.
@@ -170,12 +169,14 @@ class ModelWrapper(six.with_metaclass(ABCMeta, object)):
   # (変更) logit取得
   def get_logit(self, examples):
     #return self.sess.run(self.ends['logit'], {self.ends['input']: examples})
-    return self.sess.run(self.ends['logit'], {self.ends['input']: examples})
+    return self.sess.run(self.ends['logit'], {self.ends['input']: examples}) 
+  
 
-  # (変更) logitの勾配を得る (修正の必要あり)
-  def get_logit_gradient(self, acts, bottleneck_name):
+  # (変更) logitの勾配を得る
+  def get_logit_gradient(self, acts, y, bottleneck_name):
     return self.sess.run(self.bottlenecks_logit_gradients[bottleneck_name], {
         self.bottlenecks_tensors[bottleneck_name]: acts,
+        self.y_class_label: y
     })
 
   def get_predictions(self, examples):
@@ -286,16 +287,26 @@ class PublicImageModelWrapper(ImageModelWrapper):
     graph = tf.get_default_graph()
 
     # Construct gradient ops.
+    # Softmaxがlossに含まれているため, 計算結果が異なる
     with graph.as_default():
       self.y_input = tf.placeholder(tf.int64, shape=[None])
 
       self.pred = tf.expand_dims(self.ends['prediction'][0], 0)
+      self.logit = tf.expand_dims(self.ends['logit'][0], 0)
       self.loss = tf.reduce_mean(
           tf.nn.softmax_cross_entropy_with_logits(
               labels=tf.one_hot(
                   self.y_input,
                   self.ends['prediction'].get_shape().as_list()[1]),
               logits=self.pred))
+      # self.loss = tf.reduce_mean(
+      #     tf.keras.losses.categorical_crossentropy(
+      #         y_true=tf.one_hot(
+      #             self.y_input,
+      #             self.ends['prediction'].get_shape().as_list()[1]),
+      #         y_pred=self.logit))
+      #self.loss = - tf.math.log(self.ends['prediction'][:,self.y_input[0]])
+      # self.loss = - self.ends['logit'][:,self.y_input[0]]
     self._make_gradient_tensors()
     # (変更) logitの勾配を作成
     self._make_logit_gradient_tensors()

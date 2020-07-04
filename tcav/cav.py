@@ -321,6 +321,7 @@ def get_or_train_cav(concepts,
       try:
         tf.logging.debug('CAV already exists: {}'.format(cav_path))
         cav_instance = CAV.load_cav(cav_path)
+        cav_instance.cavs /= np.linalg.norm(cav_instance.cavs) # normalize
         tf.logging.info('Loaded CAV accuracies: {}'.format(cav_instance.accuracies))
         return cav_instance
       except:
@@ -330,5 +331,6 @@ def get_or_train_cav(concepts,
       concepts, bottleneck, cav_hparams.alpha))
   cav_instance = CAV(concepts, bottleneck, cav_hparams, cav_path)
   cav_instance.train({c: acts[c] for c in concepts})
+  cav_instance.cavs /= np.linalg.norm(cav_instance.cavs) # normalize
   tf.logging.info('CAV accuracies: {}'.format(cav_instance.accuracies))
   return cav_instance
