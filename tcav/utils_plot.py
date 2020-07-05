@@ -478,7 +478,7 @@ def plot_concept_sensitivity(results, save_path = None,keyword=''):
   ax.set_ylabel('Sensitivity Score')
   # ax.set_xlabel(xlabel_name)
   y_range = 0.00075
-  ax.set_ylim(-y_range, y_range)
+  #ax.set_ylim(-y_range, y_range)
   ax.set_xticks(index + num_bottlenecks * bar_width / 2)
   #plt.xticks(fontsize=8)
   ax.set_xticklabels(plot_concepts)

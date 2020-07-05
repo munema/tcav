@@ -206,7 +206,7 @@ def get_logit_grad(cavs_path, bottleneck,target):
           continue
         _, b,t = cav_dir.split(':')
         if b == bottleneck and t == target:
-          s = np.array([-(1-pred[i])*grad[i] for i in range(len(pred))])
+          s = np.array([-pred[i]*grad[i] for i in range(len(pred))])
     return s
 
 # cos類似度

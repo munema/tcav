@@ -427,8 +427,12 @@ class TCAV(object):
     # first check if target class is in model.
 
     tf.logging.info('running %s %s' % (target_class, concepts))
-
-    if self.make_random and os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1])):
+    keyword = ''
+    if self.logit_grad:
+      keyword += ':logit_grad'
+    if self.grad_nomalize:
+      keyword += '-grad_nomalize'
+    if self.make_random and os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1],keyword)):
       return None
 
     # Get acts
@@ -488,8 +492,8 @@ class TCAV(object):
     }
     del acts
 
-    if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1])):
-      pickle_dump(result, self.tcav_dir + '{}:{}:{}:{}_{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1]))
+    if self.make_random and not os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1],keyword)):
+      pickle_dump(result, self.tcav_dir + '{}:{}:{}:{}_{}{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1],keyword))
     return result
 
   def _process_what_to_run_expand(self, num_random_exp=100, random_concepts=None):
