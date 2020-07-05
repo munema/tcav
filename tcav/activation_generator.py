@@ -59,6 +59,13 @@ class ActivationGeneratorBase(ActivationGeneratorInterface):
   def get_activations_for_concept(self, concept, bottleneck):
     examples = self.get_examples_for_concept(concept)
     return self.get_activations_for_examples(examples, bottleneck)
+  
+  def get_activations_for_noised_concept(self, concept, bottleneck, noiselevel = 1.0):
+    sigma = noiselevel
+    std = 0.01
+    examples = self.get_examples_for_concept(concept)
+    examples += sigma*np.random.normal(0.0,std,(examples.shape[0],examples.shape[1],examples.shape[2],examples.shape[3]))
+    return self.get_activations_for_examples(examples, bottleneck), examples
 
   def get_activations_for_examples(self, examples, bottleneck):
     acts = self.model.run_examples(examples, bottleneck)

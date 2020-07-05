@@ -57,7 +57,7 @@ class TCAV(object):
     return dot_prod < 0
   
   @staticmethod
-  def get_direction_dir_sign(mymodel, act, cav, concept, class_id, example, grad_vals, i):
+  def get_direction_dir_sign(mymodel, act, cav, concept, class_id, example, grad_vals, i, logit_grad):
     """Get the sign of directional derivative.
 
     Args:
@@ -73,12 +73,17 @@ class TCAV(object):
     """
     # Grad points in the direction which DECREASES probability of class
     if len(grad_vals) == 0:
-      grad = np.reshape(mymodel.get_gradient(
-          act, [class_id], cav.bottleneck, example), -1)
+      if logit_grad:
+        grad = np.reshape(mymodel.get_logit_gradient(act, class_id, cav.bottleneck), -1)
+      else:
+        grad = np.reshape(mymodel.get_gradient(
+            act, [class_id], cav.bottleneck, example), -1)
     else:
       grad = grad_vals[i]
+    if logit_grad == False:
+      grad = - grad
     dot_prod = np.dot(grad, cav.get_direction(concept))
-    return dot_prod < 0
+    return dot_prod > 0
 
   @staticmethod
   def compute_tcav_score(mymodel,
@@ -92,6 +97,7 @@ class TCAV(object):
                          activation_generator,
                          cav_dir,
                          true_cav=False,
+                         logit_grad=False,
                          run_parallel=True,
                          num_workers=20):
     """Compute TCAV score.
@@ -113,10 +119,16 @@ class TCAV(object):
         wrt loss).
     """
     # load grad
-    if os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
-      grad_vals = pickle_load(cav_dir+'/grad:'+bottleneck+':'+target_class)
+    if logit_grad:
+      if os.path.exists(cav_dir+'/logitgrad:'+bottleneck+':'+target_class):
+        grad_vals = pickle_load(cav_dir+'/logitgrad:'+bottleneck+':'+target_class)
+      else:
+        grad_vals = []
     else:
-      grad_vals = []
+      if os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        grad_vals = pickle_load(cav_dir+'/grad:'+bottleneck+':'+target_class)
+      else:
+        grad_vals = []
     count = 0
     class_id = mymodel.label_to_id(target_class)
     if run_parallel:
@@ -138,7 +150,7 @@ class TCAV(object):
             count += 1
         else:
           if TCAV.get_direction_dir_sign(
-              mymodel, act, cav, concept, class_id, example, grad_vals, i):
+              mymodel, act, cav, concept, class_id, example, grad_vals, i, logit_grad):
             count += 1
       return float(count) / float(len(class_acts))
 
@@ -173,15 +185,20 @@ class TCAV(object):
 
   @staticmethod
   def get_directional_dir_plus(
-      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,acts,activation_generator,true_cav,make_random):
+      mymodel, target_class, concept, cav, class_acts, examples,cav_dir,project_name,bottleneck,negative_concept,acts,activation_generator,true_cav,logit_grad,grad_nomalize,make_random):
     class_id = mymodel.label_to_id(target_class)
     directional_dir_vals = []
     cav_vector_vals = []
-    
-    if os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
-      grad_vals = pickle_load(cav_dir+'/grad:'+bottleneck+':'+target_class)
+    if logit_grad:
+      if os.path.exists(cav_dir+'/logitgrad:'+bottleneck+':'+target_class):
+        grad_vals = pickle_load(cav_dir+'/logitgrad:'+bottleneck+':'+target_class)
+      else:
+        grad_vals = []
     else:
-      grad_vals = []
+      if os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        grad_vals = pickle_load(cav_dir+'/grad:'+bottleneck+':'+target_class)
+      else:
+        grad_vals = []
     if os.path.exists(cav_dir+'/predict:'+target_class):
       class_pred = pickle_load(cav_dir+'/predict:'+target_class)    
     else:
@@ -192,11 +209,18 @@ class TCAV(object):
       if len(act.shape) == 3:
         act = np.expand_dims(act,3)
       example = examples[i]
-      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
-        grad = np.reshape(
-          mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+      if logit_grad:
+        if not os.path.exists(cav_dir+'/logitgrad:'+bottleneck+':'+target_class):
+          grad = np.reshape(
+            mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+        else:
+          grad = grad_vals[i]
       else:
-        grad = grad_vals[i]
+        if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+          grad = np.reshape(
+            mymodel.get_gradient(act, [class_id], cav.bottleneck, example), -1)
+        else:
+          grad = grad_vals[i]
       if not os.path.exists(cav_dir+'/predict:'+target_class): 
         pred = mymodel.get_predictions(np.expand_dims(example,0))[:,class_id]
       else:
@@ -210,17 +234,30 @@ class TCAV(object):
         directional_dir = np.dot(grad, cav_vector)
       else:
         cav_vector = cav.get_direction(concept)
-        directional_dir = np.dot(-(1-pred)*grad, cav_vector)
+        if grad_nomalize:
+          if logit_grad:
+            directional_dir = np.dot(grad, cav_vector)
+          else:
+            directional_dir = np.dot(-pred*grad, cav_vector)
+        else:
+          if logit_grad:
+            directional_dir = cos_sim(grad, cav_vector)
+          else:
+            directional_dir = cos_sim(-grad, cav_vector)
       directional_dir_vals.append(directional_dir)
       cav_vector_vals.append(cav_vector)
-      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class) or not os.path.exists(cav_dir+'/logitgrad:'+bottleneck+':'+target_class):
         grad_vals.append(grad)
       if not os.path.exists(cav_dir+'/predict:'+target_class):       
         class_pred.append(pred)
       #logit_grad = np.reshape(mymodel.get_logit_gradient(act,class_id,cav.bottleneck).squeeze(),-1)
 
-    if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
-      pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
+    if logit_grad:
+      if not os.path.exists(cav_dir+'/logitgrad:'+bottleneck+':'+target_class):
+        pickle_dump(grad_vals,cav_dir+'/logitgrad:'+bottleneck+':'+target_class)
+    else:
+      if not os.path.exists(cav_dir+'/grad:'+bottleneck+':'+target_class):
+        pickle_dump(grad_vals,cav_dir+'/grad:'+bottleneck+':'+target_class)
     if not os.path.exists(cav_dir+'/predict:'+target_class):
       class_pred = mymodel.get_predictions(examples)[:,class_id]
       pickle_dump(class_pred,cav_dir+'/predict:'+target_class)
@@ -241,7 +278,9 @@ class TCAV(object):
                random_concepts=None,
                project_name=None,
                make_random=True,
-               true_cav=False):
+               true_cav=False,
+               logit_grad=False,
+               grad_nomalize=False):
     """Initialze tcav class.
 
     Args:
@@ -278,6 +317,8 @@ class TCAV(object):
     self.project_name = project_name
     self.make_random = make_random
     self.true_cav = true_cav
+    self.logit_grad = logit_grad
+    self.grad_nomalize = grad_nomalize
     #(追加)ログファイル作成
     # logging.basicConfig(filename=str(pathlib.Path(tcav_dir).parent)+'/logger.log', level=logging.INFO)
 
@@ -353,10 +394,14 @@ class TCAV(object):
         self.params), time.time() - now))
     if return_proto:
       return utils.results_to_proto(results)
-    elif self.make_random == False and self.true_cav == False:
+    elif self.make_random == False and self.true_cav == False and self.logit_grad == False and self.grad_nomalize == False:
       pickle_dump(results, self.tcav_dir + self.project_name)
     elif self.true_cav:
       pickle_dump(results, self.tcav_dir + 'trueCAV-' + self.project_name)
+    elif self.logit_grad:
+      pickle_dump(results, self.tcav_dir + 'logitgrad-' + self.project_name)
+    elif self.grad_nomalize:
+      pickle_dump(results, self.tcav_dir + 'gradnomalize-' + self.project_name)
     return results
 
   # (変更) 保存
@@ -416,11 +461,11 @@ class TCAV(object):
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
         activation_generator.get_examples_for_concept(target_class),
-        acts,cav_instance.bottleneck,activation_generator,cav_dir,self.true_cav,run_parallel=run_parallel)
+        acts,cav_instance.bottleneck,activation_generator,cav_dir,self.true_cav,self.logit_grad,run_parallel=run_parallel)
     val_directional_dirs = self.get_directional_dir_plus(
         mymodel, target_class_for_compute_tcav_score, cav_concept,
         cav_instance, acts[target_class][cav_instance.bottleneck],
-        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1],acts,activation_generator,self.true_cav,self.make_random)
+        activation_generator.get_examples_for_concept(target_class),self.cav_dir,self.project_name,bottleneck,concepts[1],acts,activation_generator,self.true_cav,self.logit_grad,self.grad_nomalize,self.make_random)
     result = {
         'cav_key':
             a_cav_key,

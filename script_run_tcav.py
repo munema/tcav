@@ -6,7 +6,7 @@ import tcav.utils as utils
 import tcav.utils_plot as utils_plot # utils_plot requires matplotlib
 import os
 import tensorflow as tf
-from config import root_dir, model_to_run, bottlenecks, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random,true_cav
+from config import root_dir, model_to_run, bottlenecks, concepts, version, num_random_exp, max_examples, run_parallel, num_workers, is_cav_on, make_random,true_cav,logit_grad,grad_nomalize
 import sys
 
 # target
@@ -61,8 +61,9 @@ print('Results is saved at {}'.format(working_dir))
 sess = utils.create_session()
 
 #===============================================================================
-GRAPH_PATH = root_dir + 'tcav/frozen_models/normal_mnist_2layers_cnn.pb'
-LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist-color-number'
+GRAPH_PATH = root_dir + 'tcav/frozen_models/colored_mnist_number_2layers_cnn.pb'
+#LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist-color-number'
+LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist_number'
 
 mymodel = model.KerasMnistCnnWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
 #=================================================================================
@@ -84,7 +85,9 @@ mytcav = tcav.TCAV(sess,
                 num_random_exp=num_random_exp,
                 project_name=project_name,
                 make_random=make_random,
-                true_cav=true_cav)#10)
+                true_cav=true_cav,
+                logit_grad=logit_grad,
+                grad_nomalize=grad_nomalize)#10)
 print ('This may take a while... Go get coffee!')
 results = mytcav.run(run_parallel=run_parallel, num_workers=num_workers)
 print ('done!')
