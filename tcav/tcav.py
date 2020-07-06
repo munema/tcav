@@ -234,7 +234,7 @@ class TCAV(object):
         directional_dir = np.dot(grad, cav_vector)
       else:
         cav_vector = cav.get_direction(concept)
-        if grad_nomalize:
+        if grad_nomalize == False:
           if logit_grad:
             directional_dir = np.dot(grad, cav_vector)
           else:
@@ -373,13 +373,18 @@ class TCAV(object):
         tf.logging.info('Finished running param %s of %s' % (i, len(self.params)))
         results.append(res)
     else:
+      keyword = ''
+      if self.logit_grad:
+        keyword += ':logit_grad'
+      if self.grad_nomalize:
+        keyword += ':grad_nomalize'
       for i, param in enumerate(self.params):
         tf.logging.info('Running param %s of %s' % (i, len(self.params)))
         # randomをスキップ
         if 'random' in param.concepts[0] and self.make_random == False:
           continue
         # randomのみ計算
-        elif self.make_random == True and ('random' not in param.concepts[0] or os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}'.format(param.bottleneck,param.target_class,param.alpha,param.concepts[0],param.concepts[1]))):
+        elif self.make_random == True and ('random' not in param.concepts[0] or os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}{}'.format(param.bottleneck,param.target_class,param.alpha,param.concepts[0],param.concepts[1],keyword))):
           continue
         # 真のCAVで計算
         elif self.true_cav:
@@ -394,7 +399,7 @@ class TCAV(object):
         self.params), time.time() - now))
     if return_proto:
       return utils.results_to_proto(results)
-    elif self.make_random == False and self.true_cav == False and self.logit_grad == False and self.grad_nomalize == False:
+    elif self.make_random == False and self.true_cav == False:
       pickle_dump(results, self.tcav_dir + self.project_name)
     elif self.true_cav:
       pickle_dump(results, self.tcav_dir + 'trueCAV-' + self.project_name)
