@@ -61,11 +61,11 @@ print('Results is saved at {}'.format(working_dir))
 sess = utils.create_session()
 
 #===============================================================================
-#GRAPH_PATH = root_dir + 'tcav/frozen_models/colored_mnist_number_2layers_cnn.pb'
-GRAPH_PATH = root_dir + 'tcav/frozen_models/normal_mnist_2layers_cnn.pb'
+GRAPH_PATH = root_dir + 'tcav/frozen_models/colored_mnist_number_2layers_cnn.pb'
+#GRAPH_PATH = root_dir + 'tcav/frozen_models/normal_mnist_2layers_cnn.pb'
 #LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist-color-number'
-#LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist_number'
-LABEL_PATH = root_dir + 'tcav/dataset/normal_mnist'
+LABEL_PATH = root_dir + 'tcav/dataset/colored_mnist_number'
+#LABEL_PATH = root_dir + 'tcav/dataset/normal_mnist'
 
 mymodel = model.KerasMnistCnnWrapper_public(sess,GRAPH_PATH,LABEL_PATH)
 #=================================================================================
