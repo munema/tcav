@@ -62,6 +62,8 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   random_i_ups = {}
 
   for result in results:
+    # if result['bottleneck']=='conv1':
+    #   continue;
     if result['cav_concept'] not in result_summary:
       result_summary[result['cav_concept']] = {}
 
@@ -160,8 +162,14 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
 
   # draw all bottlenecks individually
   for i, [bn, vals] in enumerate(plot_data.items()):
+    c_lst = []
+    for j, tf in enumerate(vals['significant']):
+      if tf and j!=len(vals['significant'])-1:
+        c_lst.append('coral')
+      else:
+        c_lst.append('lightgray')
     bar = ax.bar(index + i * bar_width, vals['bn_vals'],
-        bar_width, yerr=vals['bn_stds'], label=bn)
+          bar_width, yerr=vals['bn_stds'], label=bn,color=c_lst)
     # draw stars to mark bars that are stastically insignificant to
     # show them as different from others
     # for j, significant in enumerate(vals['significant']):
@@ -174,7 +182,8 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
       if not significant:
         ax.text(index[j] + i * bar_width - 0.1, 0.9, "*",
             fontdict = {'weight': 'bold', 'size': 16,
-            'color': bar.patches[0].get_facecolor()})
+            #'color': bar.patches[0].get_facecolor()})
+            'color':'black'})
 
   # xlabel_name = ''
   # if '-' in plot_concepts[0]:
@@ -193,16 +202,16 @@ def plot_results(results, random_counterpart=None, random_concepts=None, num_ran
   # print (plot_data)
   # set properties
   # (変更) 0.5に横線を引く
-  ax.axhline(0.5, ls = "--", color = 'lightgray')
+  ax.axhline(0.5, ls = "--", color = 'gray')
   # (変更) ターゲットクラス名表示
-  target_class = results[0]['target_class'].title()
-  ax.set_title('{} TCAV Scores (* is not rejected)'.format(target_class))
-  ax.set_ylabel('TCAV Score')
+  target_class = results[0]['target_class']
+  ax.set_title('{} concept TCAV Scores (* is not rejected)'.format(target_class))
+  ax.set_ylabel('mean(TCAV)')
   ax.set_ylim(0, 1)
-  #ax.set_xlabel(xlabel_name)
+  ax.set_xlabel('concept')
   ax.set_xticks(index + num_bottlenecks * bar_width / 2)
   ax.set_xticklabels(plot_concepts)
-  ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
+  #ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
   fig.tight_layout()
   if save_path is not None:
     plt.savefig(f'{save_path}/{target_class}:{keyword}_with_random.eps')
@@ -221,6 +230,8 @@ def plot_concept_results(results, save_path = None,keyword=''):
   result_summary = {}
 
   for result in results:
+    if result['bottleneck']=='conv1':
+      continue;
     if result['cav_concept'] not in result_summary:
       result_summary[result['cav_concept']] = {}
 
@@ -238,8 +249,6 @@ def plot_concept_results(results, save_path = None,keyword=''):
 
   # print concepts and classes with indentation
   for concept in result_summary:
-
-    # if not random
     if not is_random_concept(concept):
       # print(" ", "Concept =", concept)
       plot_concepts.append(concept)
@@ -264,11 +273,10 @@ def plot_concept_results(results, save_path = None,keyword=''):
   # matplotlib
   fig, ax = plt.subplots()
 
-
   # draw all bottlenecks individually
   for i, [bn, vals] in enumerate(plot_data.items()):
     bar = ax.bar(index + i * bar_width, vals['bn_vals'],
-        bar_width, yerr=vals['bn_stds'], label=bn)
+        bar_width, yerr=vals['bn_stds'], label=bn, color='coral')
 
   # xlabel_name = ''
   # if '-' in plot_concepts[0]:
@@ -281,8 +289,8 @@ def plot_concept_results(results, save_path = None,keyword=''):
   #   plot_concepts = [ c.split('_')[-1] for c in plot_concepts]
   # xlabel_name += ' Concept'
 
-  if '-' in plot_concepts[0]:
-    plot_concepts = [ c.split('-')[-1] if c.split('-')[0] == 'imagenet' else c for c in plot_concepts]
+  # if '-' in plot_concepts[0]:
+  #   plot_concepts = [ c.split('-')[-1] if c.split('-')[0] == 'imagenet' else c for c in plot_concepts]
 
   # print (plot_data)
   # set properties
@@ -291,13 +299,13 @@ def plot_concept_results(results, save_path = None,keyword=''):
   # (変更) ターゲットクラス名表示
   target_class = results[0]['target_class'].title()
   ax.set_title('{} TCAV Scores'.format(target_class))
-  ax.set_ylabel('TCAV Score')
+  ax.set_ylabel('mean(TCAV)')
   # ax.set_xlabel(xlabel_name)
   ax.set_ylim(0, 1)
   ax.set_xticks(index + num_bottlenecks * bar_width / 2)
   #plt.xticks(fontsize=8)
   ax.set_xticklabels(plot_concepts)
-  ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
+  #ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
   fig.tight_layout()
   if save_path is not None:
     plt.savefig(f'{save_path}/{target_class}:{keyword}.eps')
@@ -594,6 +602,8 @@ def plot_sensitivity_results(results, random_counterpart=None, random_concepts=N
   random_i_ups = {}
 
   for result in results:
+    if result['bottleneck']=='conv1':
+      continue;
     if result['cav_concept'] not in result_summary:
       result_summary[result['cav_concept']] = {}
 
@@ -671,18 +681,11 @@ def plot_sensitivity_results(results, random_counterpart=None, random_concepts=N
 
   # matplotlib
   fig, ax = plt.subplots()
-  y_range = 0.00075
+  y_range = 0.0003
 
   for i, [bn, vals] in enumerate(plot_data.items()):
     bar = ax.bar(index + i * bar_width, vals['bn_vals'],
-        bar_width, yerr=vals['bn_stds'], label=bn)
-
-
-    for j, significant in enumerate(vals['significant']):
-      if not significant:
-        ax.text(index[j] + i * bar_width - 0.1, y_range*0.9, "*",
-            fontdict = {'weight': 'bold', 'size': 16,
-            'color': bar.patches[0].get_facecolor()})
+        bar_width, yerr=vals['bn_stds'], label=bn,color='goldenrod')
 
   if '-' in plot_concepts[0]:
     plot_concepts = [ c.split('-')[-1] if c.split('-')[0] == 'imagenet' else c for c in plot_concepts]
@@ -692,14 +695,14 @@ def plot_sensitivity_results(results, random_counterpart=None, random_concepts=N
   # (変更) 0.5に横線を引く
   #ax.axhline(0.5, ls = "--", color = 'lightgray')
   # (変更) ターゲットクラス名表示
-  target_class = results[0]['target_class'].title()
-  ax.set_title('{} Sensitivity Scores (* is not rejected)'.format(target_class))
-  ax.set_ylabel('Sensitivity Score')
-  #ax.set_ylim(-y_range, y_range)
-  #ax.set_xlabel(xlabel_name)
+  target_class = results[0]['target_class']
+  ax.set_title('{} Sensitivity Scores Value'.format(target_class))
+  ax.set_ylabel('Sensitivity scores value')
+  ax.set_ylim(-y_range, y_range)
+  ax.set_xlabel('concept')
   ax.set_xticks(index + num_bottlenecks * bar_width / 2)
   ax.set_xticklabels(plot_concepts)
-  ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
+  #ax.legend(loc='upper left',bbox_to_anchor=(1.05, 1))
   fig.tight_layout()
   if save_path is not None:
     plt.savefig(f'{save_path}/{target_class}:{keyword}_with_random.eps')

@@ -81,7 +81,7 @@ def process_what_to_run_expand(pairs_to_test,
   """
   def get_random_concept(i):
     return (random_concepts[i] if random_concepts
-            else 'random500_{}'.format(i))
+            else 'random50_{}'.format(i))
 
   new_pairs_to_test = []
   for (target, concept_set) in pairs_to_test:
@@ -179,7 +179,7 @@ def print_results(results, random_counterpart=None, random_concepts=None, num_ra
       return concept in random_concepts
 
     else:
-      return 'random500_' in concept
+      return 'random50_' in concept
 
   # print class, it will be the same for all
   print("Class =", results[0]['target_class'])

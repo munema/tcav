@@ -50,6 +50,10 @@ import socket
 import random
 import string
 import numpy as np
+import shutil
+import os
+
+
 
 kImagenetBaseUrl = "http://imagenet.stanford.edu/api/text/imagenet.synset.geturls?wnid="
 kBrodenTexturesPath = "broden1_224/images/dtd/"
@@ -452,7 +456,9 @@ def generate_random_folders(working_directory, random_folder_prefix,
                             number_of_examples_per_folder, imagenet_dataframe):
   socket.setdefaulttimeout(3)
   imagenet_concepts = imagenet_dataframe["class_name"].values.tolist()
-  for partition_number in range(number_of_random_folders):
+  #for partition_number in range(number_of_random_folders):
+  partition_number = 0
+  while partition_number <= number_of_random_folders:
     partition_name = random_folder_prefix + "_" + str(partition_number)
     partition_folder_path = os.path.join(working_directory, partition_name)
     if os.path.exists(partition_folder_path):
@@ -463,25 +469,55 @@ def generate_random_folders(working_directory, random_folder_prefix,
 
     # Select a random concept
     tf.logging.info('{} number of examples {}'.format(partition_name,examples_selected))
-    while examples_selected < number_of_examples_per_folder:
+    urls = []
+    while len(urls) < number_of_examples_per_folder:
       random_concept = random.choice(imagenet_concepts)
       try:
         urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
       except:
         continue
-      for url in urls:
-        # We are filtering out images from Flickr urls, since several of those were removed
-        if "flickr" not in url:
-          try:
-            examples_selected = download_image(partition_folder_path, url, examples_selected)
-            # examples_selected += 1
-            if (examples_selected) % 10 == 0:
-              tf.logging.info("Downloaded " + str(examples_selected) + "/" +
-                              str(number_of_examples_per_folder) + " for " +
-                              partition_name)
-            break  # Break if we successfully downloaded an image
-          except:
-              pass # try new url
+    print(partition_number,random_concept)
+    for i,url in enumerate(urls):
+      #print(url)
+      if "flickr" not in url:
+        try:
+          examples_selected = download_image(partition_folder_path, url, examples_selected)
+          # examples_selected += 1
+          if (examples_selected) % 10 == 0:
+            tf.logging.info("Downloaded " + str(examples_selected) + "/" +
+                            str(number_of_examples_per_folder) + " for " +
+                            partition_name)
+        except:
+            pass # try new url
+      if examples_selected >= number_of_examples_per_folder:
+        partition_number  += 1
+        break
+      if i == len(urls)-1:
+        shutil.rmtree(partition_folder_path)
+        
+
+    # while examples_selected < number_of_examples_per_folder:
+    #   random_concept = random.choice(imagenet_concepts)
+    #   urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
+    #   try:
+    #     urls = fetch_all_urls_for_concept(imagenet_dataframe, random_concept)
+    #   except:
+    #     continue
+    #   for url in urls:
+    #     print(url)
+    #     # We are filtering out images from Flickr urls, since several of those were removed
+    #     if "flickr" not in url:
+    #       try:
+    #         examples_selected = download_image(partition_folder_path, url, examples_selected)
+    #         # examples_selected += 1
+    #         if (examples_selected) % 10 == 0:
+    #           tf.logging.info("Downloaded " + str(examples_selected) + "/" +
+    #                           str(number_of_examples_per_folder) + " for " +
+    #                           partition_name)
+    #         break  # Break if we successfully downloaded an image
+    #       except:
+    #           pass # try new url
+
 
 # (追加) imagenetから色ベースで画像を収集 (hsv変換)
 def fetch_imagenet_class_color(working_directory, number_of_examples_per_folder, imagenet_dataframe, folder_prefix, color_lst):

@@ -5,7 +5,7 @@ from config import root_dir
 from tcav.utils import pickle_load, pickle_dump
 
 path = root_dir + 'log/2layers-colored-mnist-number_10/random100'
-target = 'mnist-0'
+target = 'mnist-6'
 #bottleneck = 'conv1'
 
 # activation_path = path + '/activations/'
@@ -16,7 +16,7 @@ results_path = os.listdir(tcav_path)
 all_results = []
 non_dup_results = []
 for result in results_path:
-  if keyword not in result:
+  if keyword in result:
     continue
   positive_num = int(re.match(r'.+:.+:.+:random500_(\d+)_random500_(\d+).*',result).group(1))
   negative_num = int(re.match(r'.+:.+:.+:random500_(\d+)_random500_(\d+).*',result).group(2))
@@ -29,5 +29,5 @@ for result in results_path:
 print(len(all_results))
 print(len(non_dup_results))
 
-pickle_dump(all_results, path + '/' + target + '_results_all:'+keyword)
-pickle_dump(non_dup_results,path + '/' + target + '_results_non_dup:'+keyword )
+pickle_dump(all_results, path + '/' + target + '_results_all')
+pickle_dump(non_dup_results,path + '/' + target + '_results_non_dup')

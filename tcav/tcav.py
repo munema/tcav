@@ -397,16 +397,22 @@ class TCAV(object):
         results.append(self._run_single_set(param, overwrite=overwrite, run_parallel=run_parallel))
     tf.logging.info('Done running %s params. Took %s seconds...' % (len(
         self.params), time.time() - now))
+    
+    keyword = ''
+    is_keyword = False
+    if self.logit_grad:
+      keyword += ':logit_grad'
+      is_keyword = True
+    if self.grad_nomalize:
+      keyword += ':grad_nomalize'
+      is_keyword = True
+      
     if return_proto:
       return utils.results_to_proto(results)
     elif self.make_random == False and self.true_cav == False:
-      pickle_dump(results, self.tcav_dir + self.project_name)
-    elif self.true_cav:
-      pickle_dump(results, self.tcav_dir + 'trueCAV-' + self.project_name)
-    elif self.logit_grad:
-      pickle_dump(results, self.tcav_dir + 'logitgrad-' + self.project_name)
-    elif self.grad_nomalize:
-      pickle_dump(results, self.tcav_dir + 'gradnomalize-' + self.project_name)
+      pickle_dump(results, self.tcav_dir + self.project_name + keyword)
+    elif self.make_random == False and self.true_cav:
+      pickle_dump(results, self.tcav_dir + 'trueCAV-' + self.project_name + keyword)
     return results
 
   # (変更) 保存
@@ -433,10 +439,15 @@ class TCAV(object):
 
     tf.logging.info('running %s %s' % (target_class, concepts))
     keyword = ''
+    is_keyword = False
     if self.logit_grad:
       keyword += ':logit_grad'
+      is_keyword = True
     if self.grad_nomalize:
-      keyword += '-grad_nomalize'
+      keyword += ':grad_nomalize'
+      is_keyword = True
+    if is_keyword:
+      keyword += ':'    
     if self.make_random and os.path.exists(self.tcav_dir + '{}:{}:{}:{}_{}{}'.format(bottleneck,target_class,alpha,concepts[0],concepts[1],keyword)):
       return None
 
@@ -534,7 +545,7 @@ class TCAV(object):
     # ith random concept
     def get_random_concept(i):
       return (random_concepts[i] if random_concepts
-              else 'random500_{}'.format(i))
+              else 'random50_{}'.format(i))
 
     if self.random_counterpart is None:
       # TODO random500_1 vs random500_0 is the same as 1 - (random500_0 vs random500_1)

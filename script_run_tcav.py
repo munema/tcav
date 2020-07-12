@@ -21,8 +21,8 @@ def list_string(list):
     return str
 
 def create_project_name(model, bottlenecks, target, concepts, version):
-    name = model_to_run
-    name += '_'+ list_string(bottlenecks)
+    #name = model_to_run
+    name = list_string(bottlenecks)
     name += ':'+ target
     name += ':'+ list_string(concepts)
     name += '_'+ str(version)
